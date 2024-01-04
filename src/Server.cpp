@@ -47,6 +47,7 @@ int decompress(FILE* input, FILE* output) {
             unsigned headerLen = 0;
             if (!haveHeader) {
                 headerLen = CHUNK - stream.avail_out; // get header size
+                std::cout << headerLen << " " << stream.avail_out << std::endl;
                 if(headerLen > 0) {
                     haveHeader = true;
                     memcpy(header, out, headerLen);
