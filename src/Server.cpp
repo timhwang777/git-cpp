@@ -44,8 +44,9 @@ int decompress(FILE* input, FILE* output) {
             }
 
             // write header to output file
+            unsigned headerLen = 0;
             if (!haveHeader) {
-                unsigned headerLen = CHUNK - stream.avail_out; // get header size
+                headerLen = CHUNK - stream.avail_out; // get header size
                 if(headerLen > 0) {
                     haveHeader = true;
                     memcpy(header, out, headerLen);
@@ -58,8 +59,8 @@ int decompress(FILE* input, FILE* output) {
 
             // write decompressed data to output file
             if (stream.avail_out < CHUNK) {
-                unsigned dataLen = CHUNK - stream.avail_out;
-                if(fwrite(out, 1, dataLen, output) != dataLen) {
+                unsigned dataLen = CHUNK - headerLen - stream.avail_out;
+                if(fwrite(out + headerLen, 1, dataLen, output) != dataLen) {
                     std::cerr << "Failed to write decompressed data to output file.\n";
                     return EXIT_FAILURE;
                 }
