@@ -1,21 +1,18 @@
-/* Default */
 #include <iostream>
 #include <filesystem>
 #include <fstream>
 #include <string>
-/* User defined */
 #include <cstring>
-#include <zlib.h>
+#include <zlib.h> 
 
 #define CHUNK 16384 //16KB
-using namespace std;
 
 /* Functions */
 int decompress(FILE* input, FILE* output) {
     // initialize decompression stream
     z_stream stream = {0};
     if (inflateInit(&stream) != Z_OK) {
-        cerr << "Failed to initialize decompression stream.\n";
+        std::cerr << "Failed to initialize decompression stream.\n";
         return EXIT_FAILURE;
     }
 
@@ -30,7 +27,7 @@ int decompress(FILE* input, FILE* output) {
         stream.avail_in = fread(in, 1, CHUNK, input); // read from input file
         stream.next_in = reinterpret_cast<unsigned char*>(in); // set input stream
         if (ferror(input)) {
-            cerr << "Failed to read from input file.\n";
+            std::cerr << "Failed to read from input file.\n";
             return EXIT_FAILURE;
         }
         if (stream.avail_in == 0) {
@@ -42,7 +39,7 @@ int decompress(FILE* input, FILE* output) {
             stream.next_out = reinterpret_cast<unsigned char*>(out); // set output stream
             ret = inflate(&stream, Z_NO_FLUSH); // decompress
             if (ret == Z_NEED_DICT || ret == Z_DATA_ERROR || ret == Z_MEM_ERROR) {
-                cerr << "Failed to decompress file.\n";
+                std::cerr << "Failed to decompress file.\n";
                 return EXIT_FAILURE;
             }
 
@@ -53,7 +50,7 @@ int decompress(FILE* input, FILE* output) {
                     haveHeader = true;
                     memcpy(header, out, headerLen);
                     if(fwrite(header, 1, headerLen, output) != headerLen) {
-                        cerr << "Failed to write header to output file.\n";
+                        std::cerr << "Failed to write header to output file.\n";
                         return EXIT_FAILURE;
                     }
                 }
@@ -63,7 +60,7 @@ int decompress(FILE* input, FILE* output) {
             if (stream.avail_out < CHUNK) {
                 unsigned dataLen = CHUNK - stream.avail_out;
                 if(fwrite(out, 1, dataLen, output) != dataLen) {
-                    cerr << "Failed to write decompressed data to output file.\n";
+                    std::cerr << "Failed to write decompressed data to output file.\n";
                     return EXIT_FAILURE;
                 }
             }
@@ -76,37 +73,37 @@ int decompress(FILE* input, FILE* output) {
 
 int main(int argc, char* argv[]) {
     if (argc < 2) {
-        cerr << "No command provided.\n";
+        std::cerr << "No command provided.\n";
         return EXIT_FAILURE;
     }
 
-    string command = argv[1];
+    std::string command = argv[1];
 
     if (command == "init") {
         try {
-            filesystem::create_directory(".git");
-            filesystem::create_directory(".git/objects");
-            filesystem::create_directory(".git/refs");
+            std::filesystem::create_directory(".git");
+            std::filesystem::create_directory(".git/objects");
+            std::filesystem::create_directory(".git/refs");
 
-            ofstream headFile(".git/HEAD");
+            std::ofstream headFile(".git/HEAD");
             if (headFile.is_open()) { // create .git/HEAD file
                 headFile << "ref: refs/heads/master\n"; // write to the headFile
                 headFile.close();
             } else {
-                cerr << "Failed to create .git/HEAD file.\n";
+                std::cerr << "Failed to create .git/HEAD file.\n";
                 return EXIT_FAILURE;
             }
            
-            cout << "Initialized git directory\n";
-        } catch (const filesystem::filesystem_error& e) {
-            cerr << e.what() << '\n';
+            std::cout << "Initialized git directory\n";
+        } catch (const std::filesystem::filesystem_error& e) {
+            std::cerr << e.what() << '\n';
             return EXIT_FAILURE;
         }
     }
     else if (command == "git-cat") {
         // check if object hash is provided
         if (argc < 3) {
-            cerr << "No object hash provided.\n";
+            std::cerr << "No object hash provided.\n";
             return EXIT_FAILURE;
         }
 
@@ -115,25 +112,25 @@ int main(int argc, char* argv[]) {
         snprintf(dataPath, sizeof(dataPath), ".git/objects/%.2s/%s", argv[3], argv[3] + 2);
         FILE* dataFile = fopen(dataPath, "rb");
         if (!dataFile) {
-            cerr << "Invalid object hash.\n";
+            std::cerr << "Invalid object hash.\n";
             return EXIT_FAILURE;
         }
 
         // create output file
-        FILE* outputFile = fdopen(1, "w");
+        FILE* outputFile = fdopen(1, "wb");
         if (!outputFile) {
-            cerr << "Failed to create output file.\n";
+            std::cerr << "Failed to create output file.\n";
             return EXIT_FAILURE;
         }
 
         // decompress data file
         if (decompress(dataFile, outputFile) != EXIT_SUCCESS) {
-            cerr << "Failed to decompress data file.\n";
+            std::cerr << "Failed to decompress data file.\n";
             return EXIT_FAILURE;
         }
     }
     else {
-        cerr << "Unknown command " << command << '\n';
+        std::cerr << "Unknown command " << command << '\n';
         return EXIT_FAILURE;
     }
 
