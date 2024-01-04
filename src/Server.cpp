@@ -100,7 +100,7 @@ int main(int argc, char* argv[]) {
             return EXIT_FAILURE;
         }
     }
-    else if (command == "git-cat") {
+    else if (command == "cat-file") {
         // check if object hash is provided
         if (argc < 3) {
             std::cerr << "No object hash provided.\n";
