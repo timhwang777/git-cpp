@@ -46,17 +46,16 @@ int decompress(FILE* input, FILE* output) {
             // write header to output file
             unsigned headerLen = 0, dataLen = 0;
             if (!haveHeader) {
-                sscanf(out, "%s %u\0", header, &dataLen);
+                sscanf(out, "%s %u", header, &dataLen);
                 haveHeader = true;
                 headerLen = strlen(out) + 1;
             }
-
             // write decompressed data to output file
-            unsigned dataChunkSize = CHUNK - stream.avail_out - headerLen;
             if (dataLen > 0) {
-                unsigned dataLen = CHUNK - headerLen - stream.avail_out;
-                fwrite(out + headerLen, 1, dataLen, output);
-                dataLen -= dataChunkSize;
+                if(fwrite(out + headerLen, 1, dataLen, output) != dataLen) {
+                    std::cerr << "Failed to write to output file.\n";
+                    return EXIT_FAILURE;
+                }
             }
         } while (stream.avail_out == 0);
         
