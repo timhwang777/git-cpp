@@ -52,13 +52,10 @@ int decompress(FILE* input, FILE* output) {
             }
 
             // write decompressed data to output file
-            unsigned dataChunkSize = sizeof(out) - stream.avail_out - headerLen;
+            unsigned dataChunkSize = CHUNK - stream.avail_out - headerLen;
             if (dataLen > 0) {
                 unsigned dataLen = CHUNK - headerLen - stream.avail_out;
-                if(fwrite(out + headerLen, dataChunkSize, 1, output) != dataLen) {
-                    std::cerr << "Failed to write decompressed data to output file.\n";
-                    return EXIT_FAILURE;
-                }
+                fwrite(out + headerLen, 1, dataLen, output);
                 dataLen -= dataChunkSize;
             }
         } while (stream.avail_out == 0);
