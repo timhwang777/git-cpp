@@ -74,6 +74,7 @@ std::string compute_sha1(const std::string& data) {
     std::stringstream ss;
     ss << std::hex << std::setfill('0');
     for (const auto& byte : hash) {
+        std::cout << static_cast<int>(byte) << std::endl;
         ss << std::setw(2) << static_cast<int>(byte);
     }
 
@@ -81,18 +82,17 @@ std::string compute_sha1(const std::string& data) {
     return ss.str();
 }
 
-std::vector<char> compress_data(const std::vector<char>& data) {
-    std::vector<char> compressed_data;
-    compressed_data.resize(compressBound(data.size()));
-    uLongf compressed_size = compressed_data.size();
+std::vector<char> compress_data(const std::string& data) {
+    unsigned long len = data.size();
+    unsigned long compressed_len = compressBound(len);
+    std::vector<char> compressed_data(compressed_len);
 
-    if (compress(reinterpret_cast<Bytef*>(compressed_data.data()), &compressed_size,
-        reinterpret_cast<const Bytef*>(data.data()), data.size()) != Z_OK) {
+    if(compress(reinterpret_cast<Bytef*>(compressed_data.data()), &compressed_len, reinterpret_cast<const Bytef*>(data.c_str()), len) != Z_OK) {
         std::cerr << "Failed to compress data.\n";
         return {};
     }
-    compressed_data.resize(compressed_size);
 
+    compressed_data.resize(compressed_len);
     return compressed_data;
 }
 
