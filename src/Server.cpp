@@ -129,7 +129,7 @@ int hash_object(std::string filepath) {
         object_file.write(compressed_data.data(), compressed_data.size());
         object_file.close();
 
-        std::cout << hash << std::endl
+        std::cout << hash << std::endl;
 
         return EXIT_SUCCESS;
 }
