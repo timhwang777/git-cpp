@@ -83,6 +83,7 @@ std::vector<char> compress_data(const std::vector<char>& data) {
     std::vector<char> compressed_data;
     compressed_data.resize(compressBound(data.size()));
     uLongf compressed_size = compressed_data.size();
+
     if (compress(reinterpret_cast<Bytef*>(compressed_data.data()), &compressed_size,
         reinterpret_cast<const Bytef*>(data.data()), data.size()) != Z_OK) {
         std::cerr << "Failed to compress data.\n";
@@ -107,7 +108,7 @@ int hash_object(std::string filepath) {
 
         // create the header
         std::string header = "blob " + std::to_string(content.size()) + "\0";
-        std::string file_content = header + std::string(content.begin(), content.end());
+        std::string file_content = header + "\0" + std::string(content.begin(), content.end());
 
         std::string hash = compute_sha1(file_content);
         auto compressed_data = compress_data(std::vector<char>(file_content.begin(), file_content.end()));
