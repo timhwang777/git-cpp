@@ -114,7 +114,7 @@ int hash_object(std::string filepath) {
         std::string file_content = header + "\0" + std::string(content.begin(), content.end());
 
         std::string hash = compute_sha1(file_content);
-        auto compressed_data = compress_data(std::vector<char>(file_content.begin(), file_content.end()));
+        auto compressed_data = compress_data(file_content);
         if (compressed_data.empty()) {
             std::cerr << "Failed to compress data.\n";
             return EXIT_FAILURE;
