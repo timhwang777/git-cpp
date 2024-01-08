@@ -5,9 +5,6 @@
 #include <cstring>
 #include <zlib.h> 
 #include <vector>
-#include <cryptopp/sha.h>
-#include <cryptopp/hex.h>
-#include <cryptopp/filters.h>
 
 #define CHUNK 16384 //16KB
 
