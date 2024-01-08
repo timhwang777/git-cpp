@@ -105,13 +105,13 @@ int hash_object(std::string filepath) {
         }
 
         // read the file
-        std::vector<char> content(
+        std::string content(
             (std::istreambuf_iterator<char>(inputFile)), std::istreambuf_iterator<char>()
         );
 
         // create the header
         std::string header = "blob " + std::to_string(content.size());
-        std::string file_content = header + "\0" + std::string(content.begin(), content.end());
+        std::string file_content = header + '\0' + content;
 
         std::string hash = compute_sha1(file_content);
         auto compressed_data = compress_data(file_content);
