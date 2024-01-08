@@ -76,6 +76,8 @@ std::string compute_sha1(const std::string& data) {
     for (const auto& byte : hash) {
         ss << std::setw(2) << static_cast<int>(byte);
     }
+
+    std::cout << ss.str() << std::endl;
     return ss.str();
 }
 
@@ -90,6 +92,7 @@ std::vector<char> compress_data(const std::vector<char>& data) {
         return {};
     }
     compressed_data.resize(compressed_size);
+
     return compressed_data;
 }
 
