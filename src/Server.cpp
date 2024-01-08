@@ -5,6 +5,9 @@
 #include <cstring>
 #include <zlib.h> 
 #include <vector>
+#include <sstream>
+#include <iomanip>
+#include <openssl/sha.h>
 
 #define CHUNK 16384 //16KB
 
@@ -63,6 +66,70 @@ int decompress(FILE* input, FILE* output) {
     } while (ret != Z_STREAM_END);
 
     return inflateEnd(&stream) == Z_OK ? EXIT_SUCCESS : EXIT_FAILURE;
+}
+
+std::string compute_sha1(const std::string& data) {
+    unsigned char hash[20];
+    SHA1(reinterpret_cast<const unsigned char*>(data.c_str()), data.size(), hash);
+    std::stringstream ss;
+    ss << std::hex << std::setfill('0');
+    for (const auto& byte : hash) {
+        ss << std::setw(2) << static_cast<int>(byte);
+    }
+    return ss.str();
+}
+
+std::vector<char> compress_data(const std::vector<char>& data) {
+    std::vector<char> compressed_data;
+    compressed_data.resize(compressBound(data.size()));
+    uLongf compressed_size = compressed_data.size();
+    if (compress(reinterpret_cast<Bytef*>(compressed_data.data()), &compressed_size,
+        reinterpret_cast<const Bytef*>(data.data()), data.size()) != Z_OK) {
+        std::cerr << "Failed to compress data.\n";
+        return {};
+    }
+    compressed_data.resize(compressed_size);
+    return compressed_data;
+}
+
+int hash_object(std::string filepath) {
+        // open the file
+        std::ifstream inputFile(filepath, std::ios::binary);
+        if(inputFile.fail()) {
+            std::cerr << "Failed to open file.\n";
+            return EXIT_FAILURE;
+        }
+
+        // read the file
+        std::vector<char> content(
+            std::istreambuf_iterator<char>(inputFile), std::istreambuf_iterator<char>()
+        );
+
+        // create the header
+        std::string header = "blob " + std::to_string(content.size()) + "\0";
+        std::string file_content = header + std::string(content.begin(), content.end());
+
+        std::string hash = compute_sha1(file_content);
+        auto compressed_data = compress_data(std::vector<char>(file_content.begin(), file_content.end()));
+        if (compressed_data.empty()) {
+            std::cerr << "Failed to compress data.\n";
+            return EXIT_FAILURE;
+        }
+
+        // create the file path
+        std::string object_dir = ".git/objects/" + hash.substr(0, 2);
+        std::filesystem::create_directory(object_dir);
+
+        std::string object_path = object_dir + "/" + hash.substr(2);
+        std::ofstream object_file(object_path, std::ios::binary);
+        if (object_file.fail()) {
+            std::cerr << "Failed to create object file.\n";
+            return EXIT_FAILURE;
+        }
+        object_file.write(compressed_data.data(), compressed_data.size());
+        object_file.close();
+
+        return EXIT_SUCCESS;
 }
 
 int main(int argc, char* argv[]) {
@@ -124,7 +191,21 @@ int main(int argc, char* argv[]) {
         }
     }
     else if (command == "hash-object") {
+        // check if file path is provided
+        if (argc < 3) {
+            std::cerr << "No file path provided.\n";
+            return EXIT_FAILURE;
+        }
 
+        // retrieve file name
+        char fileName[64];
+        snprintf(fileName, sizeof(fileName), "%s", argv[3]);
+
+        // hash the object
+        if (hash_object(fileName) != EXIT_SUCCESS) {
+            std::cerr << "Failed to hash object.\n";
+            return EXIT_FAILURE;
+        }
     }
     else {
         std::cerr << "Unknown command " << command << '\n';
