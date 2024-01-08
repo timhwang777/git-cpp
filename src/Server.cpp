@@ -127,40 +127,6 @@ int main(int argc, char* argv[]) {
         }
     }
     else if (command == "hash-object") {
-        // check if file path is provided
-        if (argc < 3) {
-            std::cerr << "No file path provided.\n";
-            return EXIT_FAILURE;
-        }
-
-        // retrieve file name
-        char fileName[64];
-        snprintf(fileName, sizeof(fileName), "%s", argv[3]);
-
-        // open the file
-        std::ifstream inputFile(fileName, std::ios::binary);
-        if(inputFile.fail()) {
-            std::cerr << "Failed to open file.\n";
-            return EXIT_FAILURE;
-        }
-
-        // read the file
-        std::vector<char> content(
-            std::istreambuf_iterator<char>(inputFile), std::istreambuf_iterator<char>()
-        );
-
-        // hash the file
-        CryptoPP::SHA1 hash;
-        std::string digest;
-        CryptoPP::StringSource(
-            content.data(), content.size(), true,
-            new CryptoPP::(hash, new CryptoPP::HexEncoder(new CryptoPP::StringSink(digest)))
-        );
-
-        // write the hash file to the object store
-        std::ofstream outputHashFile(".git/objects/" + digest.substr(0, 2) + "/" + digest.substr(2));
-        outputHashFile.write(content.data(), content.size());
-        outputHashFile.close();
 
     }
     else {
