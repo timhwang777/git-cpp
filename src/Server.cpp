@@ -102,7 +102,7 @@ int hash_object(std::string filepath) {
 
         // read the file
         std::vector<char> content(
-            std::istreambuf_iterator<char>(inputFile), std::istreambuf_iterator<char>()
+            (std::istreambuf_iterator<char>(inputFile)), std::istreambuf_iterator<char>()
         );
 
         // create the header
