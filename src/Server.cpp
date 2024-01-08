@@ -110,7 +110,7 @@ int hash_object(std::string filepath) {
         );
 
         // create the header
-        std::string header = "blob " + std::to_string(content.size()) + "\0";
+        std::string header = "blob " + std::to_string(content.size());
         std::string file_content = header + "\0" + std::string(content.begin(), content.end());
 
         std::string hash = compute_sha1(file_content);
