@@ -198,14 +198,13 @@ int main(int argc, char* argv[]) {
     }
     else if (command == "hash-object") {
         // check if file path is provided
-        if (argc < 3) {
+        if (argc < 4) {
             std::cerr << "No file path provided.\n";
             return EXIT_FAILURE;
         }
 
         // retrieve file name
-        char fileName[64];
-        snprintf(fileName, sizeof(fileName), "%s", argv[3]);
+        std::string fileName = argv[3];
 
         // hash the object
         if (hash_object(fileName) != EXIT_SUCCESS) {
