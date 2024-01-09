@@ -119,6 +119,10 @@ std::set<std::string> parse_tree_object (FILE* tree_object) {
         int i = 0;
         int c;
         while ((c = fgetc(tree_object)) != 0 && c != EOF) {
+            // if the character is a blank space, continue
+            if (c == ' ') {
+                continue;
+            }
             filename[i++] = c;
         }
         filename[i] = '\0'; // null-terminate the filename
@@ -127,13 +131,10 @@ std::set<std::string> parse_tree_object (FILE* tree_object) {
         // read the hash
         fread(hash, 1, 20, tree_object);
 
-        // if the mode is "40000", add the filename to the set of directories
-        //if (strcmp(mode, "40000") == 0) {
-            unsorted_directories.push_back(filename);
-        //}
+        unsorted_directories.push_back(filename);
     }
 
-    std::sort(unsorted_directories.begin(), unsorted_directories.end()); // sort the directories (lexicographically
+    std::sort(unsorted_directories.begin(), unsorted_directories.end()); // sort the directories lexicographically
     std::set<std::string> sorted_directories(unsorted_directories.begin(), unsorted_directories.end()); // remove duplicates
 
     return sorted_directories;
