@@ -113,11 +113,11 @@ std::set<std::string> parse_tree_object (FILE* tree_object) {
     char filename[256];
     unsigned char hash[20];
     while (fscanf(tree_object, "%6s", mode) != EOF) {
-        std::cout << mode << '\n';
+        std::cout << "mode:" << mode << '\n';
         // read the filename (up to the null byte)
         int i = 0;
         int c;
-        while ((c = fgetc(tree_object)) != 0 && c != EOF) {
+        while ((c = fgetc(tree_object + strlen(mode) + 1)) != 0 && c != EOF) {
             filename[i++] = c;
         }
         filename[i] = '\0'; // null-terminate the filename
