@@ -8,6 +8,7 @@
 #include <sstream>
 #include <iomanip>
 #include <openssl/sha.h>
+#include <algorithm>
 #include <set>
 
 #include "zlib_implement.h"
@@ -108,7 +109,7 @@ int hash_object(std::string filepath) {
 std::set<std::string> parse_tree_object (FILE* tree_object) {
     rewind(tree_object);
     
-    std::set<std::string> directories;
+    std::vector<std::string> unsorted_directories;
     char mode[7];
     char filename[256];
     unsigned char hash[20];
@@ -117,22 +118,25 @@ std::set<std::string> parse_tree_object (FILE* tree_object) {
         // read the filename (up to the null byte)
         int i = 0;
         int c;
-        while ((c = fgetc(tree_object + strlen(mode) + 1)) != 0 && c != EOF) {
+        while ((c = fgetc(tree_object)) != 0 && c != EOF) {
             filename[i++] = c;
         }
         filename[i] = '\0'; // null-terminate the filename
-        std::cout << filename << '\n';
+        std::cout << "filename:" << filename << '\n';
 
         // read the hash
         fread(hash, 1, 20, tree_object);
 
         // if the mode is "40000", add the filename to the set of directories
         if (strcmp(mode, "40000") == 0) {
-            directories.insert(filename);
+            unsorted_directories.push_back(filename);
         }
     }
 
-    return directories;
+    std::sort(unsorted_directories.begin(), unsorted_directories.end()); // sort the directories (lexicographically
+    std::set<std::string> sorted_directories(unsorted_directories.begin(), unsorted_directories.end()); // remove duplicates
+
+    return sorted_directories;
 }
 
 int ls_tree (const char* object_hash) {
