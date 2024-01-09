@@ -221,7 +221,7 @@ int write_tree () {
     object_file.write(tree_hash.c_str(), tree_hash.size());
     object_file.close();
 
-    std::cout << tree_hash << '\n';
+    //std::cout << tree_hash << '\n';
 
     return EXIT_SUCCESS;
 }
