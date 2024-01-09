@@ -184,7 +184,7 @@ int write_tree () {
 
     // iterate through the files and directories in the current directory
     for (const auto& entry : std::filesystem::directory_iterator(current_path)) {
-        std::cout << entry.path() << '\n';
+        //std::cout << entry.path() << '\n';
         if (std::filesystem::is_regular_file(entry.status()) || 
             std::filesystem::is_directory(entry.status())) 
         {
@@ -199,7 +199,7 @@ int write_tree () {
     std::sort(entries.begin(), entries.end(), [](const TreeEntry& a, const TreeEntry& b) {
         return a.name < b.name;
     });
-    
+
     // accumulate the entries into a string
     std::string tree_content;
     for (const TreeEntry& entry : entries) {
