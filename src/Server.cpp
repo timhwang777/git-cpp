@@ -195,6 +195,11 @@ int write_tree () {
         }
     }
 
+    // sort the enties lexicographically
+    std::sort(entries.begin(), entries.end(), [](const TreeEntry& a, const TreeEntry& b) {
+        return a.name < b.name;
+    });
+    
     // accumulate the entries into a string
     std::string tree_content;
     for (const TreeEntry& entry : entries) {
