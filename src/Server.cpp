@@ -128,9 +128,9 @@ std::set<std::string> parse_tree_object (FILE* tree_object) {
         fread(hash, 1, 20, tree_object);
 
         // if the mode is "40000", add the filename to the set of directories
-        if (strcmp(mode, "40000") == 0) {
+        //if (strcmp(mode, "40000") == 0) {
             unsorted_directories.push_back(filename);
-        }
+        //}
     }
 
     std::sort(unsorted_directories.begin(), unsorted_directories.end()); // sort the directories (lexicographically
