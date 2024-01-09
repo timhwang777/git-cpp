@@ -1,5 +1,6 @@
 #include <iostream>
 #include <cstdlib>
+#include <cstring>
 #include <zlib.h>
 #include "zlib_implement.h"
 
