@@ -13,6 +13,12 @@
 
 #include "zlib_implement.h"
 
+struct TreeEntry {
+    std::string name;
+    std::string mode;
+    std::string type;
+};
+
 /* Functions */
 int cat_file(const char* filepath) {
         FILE* dataFile = fopen(filepath, "rb");
@@ -107,7 +113,7 @@ int hash_object(std::string filepath) {
 }
 
 std::set<std::string> parse_tree_object (FILE* tree_object) {
-    rewind(tree_object);
+    rewind(tree_object); // set the file position indicator to the beginning of the file
     
     std::vector<std::string> unsorted_directories;
     char mode[7];
@@ -168,6 +174,47 @@ int ls_tree (const char* object_hash) {
     for (const std::string& directory : directories) {
         std::cout << directory << '\n';
     }
+
+    return EXIT_SUCCESS;
+}
+
+int write_tree () {
+    std::vector<TreeEntry> entries;
+    std::filesystem::path current_path = std::filesystem::current_path();
+
+    // iterate through the files and directories in the current directory
+    for (const auto& entry : std::filesystem::directory_iterator(current_path)) {
+        std::cout << entry.path() << '\n';
+        if (std::filesystem::is_regular_file(entry.status()) || 
+            std::filesystem::is_directory(entry.status())) 
+        {
+                TreeEntry tree_entry;
+                tree_entry.name = entry.path().filename().string();
+                tree_entry.mode = std::filesystem::is_regular_file(entry.status()) ? "100644" : "40000";
+                tree_entry.type = std::filesystem::is_regular_file(entry.status()) ? "blob" : "tree";
+        }
+    }
+
+    // accumulate the entries into a string
+    std::string tree_content;
+    for (const TreeEntry& entry : entries) {
+        tree_content += entry.mode + ' ' + entry.type + ' ' + entry.name + '\0';
+    }
+
+    // hash the tree
+    std::string tree_hash = compute_sha1(tree_content);
+
+    // write the hash to the object file
+    std::string object_dir = ".git/objects/" + tree_hash.substr(0, 2);
+    std::filesystem::create_directory(object_dir);
+    std::string object_path = object_dir + "/" + tree_hash.substr(2);
+    std::ofstream object_file(object_path, std::ios::binary);
+    if (object_file.fail()) {
+        std::cerr << "Failed to create object file.\n";
+        return EXIT_FAILURE;
+    }
+    object_file.write(tree_hash.c_str(), tree_hash.size());
+    object_file.close();
 
     return EXIT_SUCCESS;
 }
@@ -242,6 +289,17 @@ int main(int argc, char* argv[]) {
         std::string objectHash = argv[3];
         if (ls_tree(objectHash.c_str()) != EXIT_SUCCESS) {
             std::cerr << "Failed to retrieve object.\n";
+            return EXIT_FAILURE;
+        }
+    }
+    else if (command == "write-tree") {
+        if (argc < 2) {
+            std::cerr << "No command provided.\n";
+            return EXIT_FAILURE;
+        }
+
+        if (write_tree() != EXIT_SUCCESS) {
+            std::cerr << "Failed to write tree.\n";
             return EXIT_FAILURE;
         }
     }
