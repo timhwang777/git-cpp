@@ -223,7 +223,7 @@ int main(int argc, char* argv[]) {
 
         // retrieve file path and check if object hash is valid
         std::string objectHash = argv[3];
-        if (ls_tree() != EXIT_SUCCESS) {
+        if (ls_tree(objectHash.c_str()) != EXIT_SUCCESS) {
             std::cerr << "Failed to retrieve object.\n";
             return EXIT_FAILURE;
         }
