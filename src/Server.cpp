@@ -113,6 +113,7 @@ std::set<std::string> parse_tree_object (FILE* tree_object) {
     char filename[256];
     unsigned char hash[20];
     while (fscanf(tree_object, "%6s", mode) != EOF) {
+        std::cout << mode << '\n';
         // read the filename (up to the null byte)
         int i = 0;
         int c;
@@ -120,6 +121,7 @@ std::set<std::string> parse_tree_object (FILE* tree_object) {
             filename[i++] = c;
         }
         filename[i] = '\0'; // null-terminate the filename
+        std::cout << filename << '\n';
 
         // read the hash
         fread(hash, 1, 20, tree_object);
@@ -140,7 +142,15 @@ int ls_tree (const char* object_hash) {
 
     // set the input and output file descriptors
     FILE* object_file = fopen(object_path, "rb");
+    if(object_file == NULL) {
+        std::cerr << "Invalid object hash.\n";
+        return EXIT_FAILURE;
+    }
     FILE* output_file = tmpfile();
+    if(output_file == NULL) {
+        std::cerr << "Failed to create output file.\n";
+        return EXIT_FAILURE;
+    }
 
     if(decompress(object_file, output_file) != EXIT_SUCCESS) {
         std::cerr << "Failed to decompress object file.\n";
