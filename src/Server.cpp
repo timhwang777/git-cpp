@@ -32,6 +32,8 @@ int cat_file(const char* filepath) {
             std::cerr << "Failed to decompress data file.\n";
             return EXIT_FAILURE;
         }
+
+        return EXIT_SUCCESS;
 }
 
 std::string compute_sha1(const std::string& data) {
