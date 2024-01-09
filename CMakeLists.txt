@@ -6,7 +6,7 @@ find_package(ZLIB REQUIRED) # Find the zlib package
 find_package(OpenSSL REQUIRED) # Find the OpenSSL package
 
 # Add zlib_implement.cpp to the source files
-set(SOURCE_FILES src/Server.cpp zlib_implement.cpp)
+set(SOURCE_FILES src/Server.cpp src/zlib_implement.cpp)
 
 add_executable(server ${SOURCE_FILES})
 
