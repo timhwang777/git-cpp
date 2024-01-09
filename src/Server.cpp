@@ -8,73 +8,38 @@
 #include <sstream>
 #include <iomanip>
 #include <openssl/sha.h>
+#include <set>
 
-#define CHUNK 16384 //16KB
+#include "zlib_implement.h"
 
 /* Functions */
-int decompress(FILE* input, FILE* output) {
-    // initialize decompression stream
-    z_stream stream = {0};
-    if (inflateInit(&stream) != Z_OK) {
-        std::cerr << "Failed to initialize decompression stream.\n";
-        return EXIT_FAILURE;
-    }
-
-    // initialize decompression variables
-    char in[CHUNK];
-    char out[CHUNK];
-    bool haveHeader = false;
-    char header[64];
-    int ret;
-
-    do {
-        stream.avail_in = fread(in, 1, CHUNK, input); // read from input file
-        stream.next_in = reinterpret_cast<unsigned char*>(in); // set input stream
-        if (ferror(input)) {
-            std::cerr << "Failed to read from input file.\n";
+int cat_file(const char* filepath) {
+        FILE* dataFile = fopen(filepath, "rb");
+        if (!dataFile) {
+            std::cerr << "Invalid object hash.\n";
             return EXIT_FAILURE;
         }
-        if (stream.avail_in == 0) {
-            break;
+
+        // create output file for standard output
+        FILE* outputFile = fdopen(1, "wb");
+        if (!outputFile) {
+            std::cerr << "Failed to create output file.\n";
+            return EXIT_FAILURE;
         }
 
-        do {
-            stream.avail_out = CHUNK; // set output buffer size
-            stream.next_out = reinterpret_cast<unsigned char*>(out); // set output stream
-            ret = inflate(&stream, Z_NO_FLUSH); // decompress
-            if (ret == Z_NEED_DICT || ret == Z_DATA_ERROR || ret == Z_MEM_ERROR) {
-                std::cerr << "Failed to decompress file.\n";
-                return EXIT_FAILURE;
-            }
-
-            // write header to output file
-            unsigned headerLen = 0, dataLen = 0;
-            if (!haveHeader) {
-                sscanf(out, "%s %u", header, &dataLen);
-                haveHeader = true;
-                headerLen = strlen(out) + 1;
-            }
-            // write decompressed data to output file
-            if (dataLen > 0) {
-                if(fwrite(out + headerLen, 1, dataLen, output) != dataLen) {
-                    std::cerr << "Failed to write to output file.\n";
-                    return EXIT_FAILURE;
-                }
-            }
-        } while (stream.avail_out == 0);
-        
-    } while (ret != Z_STREAM_END);
-
-    return inflateEnd(&stream) == Z_OK ? EXIT_SUCCESS : EXIT_FAILURE;
+        // decompress data file
+        if (decompress(dataFile, outputFile) != EXIT_SUCCESS) {
+            std::cerr << "Failed to decompress data file.\n";
+            return EXIT_FAILURE;
+        }
 }
 
 std::string compute_sha1(const std::string& data) {
-    unsigned char hash[20];
+    unsigned char hash[20]; // 160 bits long for SHA1
     SHA1(reinterpret_cast<const unsigned char*>(data.c_str()), data.size(), hash);
     std::stringstream ss;
     ss << std::hex << std::setfill('0');
     for (const auto& byte : hash) {
-        std::cout << static_cast<int>(byte) << std::endl;
         ss << std::setw(2) << static_cast<int>(byte);
     }
 
@@ -84,7 +49,7 @@ std::string compute_sha1(const std::string& data) {
 
 std::vector<char> compress_data(const std::string& data) {
     unsigned long len = data.size();
-    unsigned long compressed_len = compressBound(len);
+    unsigned long compressed_len = compressBound(len); // returns the maximum length of the compressed data from zlib
     std::vector<char> compressed_data(compressed_len);
 
     if(compress(reinterpret_cast<Bytef*>(compressed_data.data()), &compressed_len, reinterpret_cast<const Bytef*>(data.c_str()), len) != Z_OK) {
@@ -138,6 +103,58 @@ int hash_object(std::string filepath) {
         return EXIT_SUCCESS;
 }
 
+std::set<std::string> parse_tree_object (FILE* tree_object) {
+    rewind(tree_object);
+    
+    std::set<std::string> directories;
+    char mode[7];
+    char filename[256];
+    unsigned char hash[20];
+    while (fscanf(tree_object, "%6s", mode) != EOF) {
+        // read the filename (up to the null byte)
+        int i = 0;
+        int c;
+        while ((c = fgetc(tree_object)) != 0 && c != EOF) {
+            filename[i++] = c;
+        }
+        filename[i] = '\0'; // null-terminate the filename
+
+        // read the hash
+        fread(hash, 1, 20, tree_object);
+
+        // if the mode is "40000", add the filename to the set of directories
+        if (strcmp(mode, "40000") == 0) {
+            directories.insert(filename);
+        }
+    }
+
+    return directories;
+}
+
+int ls_tree (const char* object_hash) {
+    // retrieve the object path
+    char object_path[64];
+    snprintf(object_path, sizeof(object_path), ".git/objects/%.2s/%s", object_hash, object_hash + 2);
+
+    // set the input and output file descriptors
+    FILE* object_file = fopen(object_path, "rb");
+    FILE* output_file = tmpfile();
+
+    if(decompress(object_file, output_file) != EXIT_SUCCESS) {
+        std::cerr << "Failed to decompress object file.\n";
+        return EXIT_FAILURE;
+    }
+
+    std::set<std::string> directories = parse_tree_object(output_file);
+
+    // print the directories
+    for (const std::string& directory : directories) {
+        std::cout << directory << '\n';
+    }
+
+    return EXIT_SUCCESS;
+}
+
 int main(int argc, char* argv[]) {
     if (argc < 2) {
         std::cerr << "No command provided.\n";
@@ -177,22 +194,8 @@ int main(int argc, char* argv[]) {
         // retrieve file path and check if object hash is valid
         char dataPath[64];
         snprintf(dataPath, sizeof(dataPath), ".git/objects/%.2s/%s", argv[3], argv[3] + 2);
-        FILE* dataFile = fopen(dataPath, "rb");
-        if (!dataFile) {
-            std::cerr << "Invalid object hash.\n";
-            return EXIT_FAILURE;
-        }
-
-        // create output file for standard output
-        FILE* outputFile = fdopen(1, "wb");
-        if (!outputFile) {
-            std::cerr << "Failed to create output file.\n";
-            return EXIT_FAILURE;
-        }
-
-        // decompress data file
-        if (decompress(dataFile, outputFile) != EXIT_SUCCESS) {
-            std::cerr << "Failed to decompress data file.\n";
+        if (cat_file(dataPath) != EXIT_SUCCESS) {
+            std::cerr << "Failed to retrieve object.\n";
             return EXIT_FAILURE;
         }
     }
@@ -209,6 +212,19 @@ int main(int argc, char* argv[]) {
         // hash the object
         if (hash_object(fileName) != EXIT_SUCCESS) {
             std::cerr << "Failed to hash object.\n";
+            return EXIT_FAILURE;
+        }
+    }
+    else if (command == "ls-tree") {
+        if (argc < 4) {
+            std::cerr << "No object hash provided.\n";
+            return EXIT_FAILURE;
+        }
+
+        // retrieve file path and check if object hash is valid
+        std::string objectHash = argv[3];
+        if (ls_tree() != EXIT_SUCCESS) {
+            std::cerr << "Failed to retrieve object.\n";
             return EXIT_FAILURE;
         }
     }
