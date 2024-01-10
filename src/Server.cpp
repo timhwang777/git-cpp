@@ -208,6 +208,12 @@ int write_tree () {
 
     // hash the tree
     std::string tree_hash = compute_sha1(tree_content);
+    // compress the tree
+    auto compressed_data = compress_data(tree_content);
+    if (compressed_data.empty()) {
+        std::cerr << "Failed to compress data.\n";
+        return EXIT_FAILURE;
+    }
 
     // write the hash to the object file
     std::string object_dir = ".git/objects/" + tree_hash.substr(0, 2);
