@@ -192,6 +192,23 @@ int write_tree () {
                 tree_entry.name = entry.path().filename().string();
                 tree_entry.mode = std::filesystem::is_regular_file(entry.status()) ? "100644" : "40000";
                 tree_entry.type = std::filesystem::is_regular_file(entry.status()) ? "blob" : "tree";
+
+                // compress the file
+                std::ifstream file(entry.path(), std::ios::binary);
+                if (file.fail()) {
+                    std::cerr << "Failed to open file.\n";
+                    return EXIT_FAILURE;
+                }
+                std::string content(
+                    (std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>()
+                );
+                std::string header = tree_entry.type + ' ' + std::to_string(content.size());
+                std::string file_content = header + '\0' + content;
+                auto compressed_data = compress_data(file_content);
+                if (compressed_data.empty()) {
+                    std::cerr << "Failed to compress data.\n";
+                    return EXIT_FAILURE;
+                }
         }
     }
 
@@ -208,12 +225,6 @@ int write_tree () {
 
     // hash the tree
     std::string tree_hash = compute_sha1(tree_content);
-    // compress the tree
-    auto compressed_data = compress_data(tree_content);
-    if (compressed_data.empty()) {
-        std::cerr << "Failed to compress data.\n";
-        return EXIT_FAILURE;
-    }
 
     // write the hash to the object file
     std::string object_dir = ".git/objects/" + tree_hash.substr(0, 2);
