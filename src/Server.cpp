@@ -179,6 +179,10 @@ int ls_tree (const char* object_hash) {
     return EXIT_SUCCESS;
 }
 
+// Contingency declarations
+void process_entry (const std::filesystem::directory_entry& entry, TreeEntry& tree_entry);
+std::string calculate_directory_hash (const std::filesystem::path& directory_path);
+
 std::string calculate_directory_hash (const std::filesystem::path& directory_path) {
     std::vector<TreeEntry> tree_entries;
 
@@ -241,7 +245,7 @@ int write_tree () {
 
     // hash the tree content
     std::string tree_hash = compute_sha1(tree_content.str());
-    
+
     return EXIT_SUCCESS;
 }
 
