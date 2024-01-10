@@ -17,6 +17,7 @@ struct TreeEntry {
     std::string name;
     std::string mode;
     std::string type;
+    std::string sha;
 };
 
 /* Functions */
@@ -178,68 +179,69 @@ int ls_tree (const char* object_hash) {
     return EXIT_SUCCESS;
 }
 
-int write_tree () {
-    std::vector<TreeEntry> entries;
-    std::filesystem::path current_path = std::filesystem::current_path();
+std::string calculate_directory_hash (const std::filesystem::path& directory_path) {
+    std::vector<TreeEntry> tree_entries;
 
-    // iterate through the files and directories in the current directory
-    for (const auto& entry : std::filesystem::directory_iterator(current_path)) {
-        //std::cout << entry.path() << '\n';
-        if (std::filesystem::is_regular_file(entry.status()) || 
-            std::filesystem::is_directory(entry.status())) 
-        {
-                TreeEntry tree_entry;
-                tree_entry.name = entry.path().filename().string();
-                tree_entry.mode = std::filesystem::is_regular_file(entry.status()) ? "100644" : "40000";
-                tree_entry.type = std::filesystem::is_regular_file(entry.status()) ? "blob" : "tree";
-
-                // compress the file
-                std::ifstream file(entry.path(), std::ios::binary);
-                if (file.fail()) {
-                    std::cerr << "Failed to open file.\n";
-                    return EXIT_FAILURE;
-                }
-                std::string content(
-                    (std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>()
-                );
-                std::string header = tree_entry.type + ' ' + std::to_string(content.size());
-                std::string file_content = header + '\0' + content;
-                auto compressed_data = compress_data(file_content);
-                if (compressed_data.empty()) {
-                    std::cerr << "Failed to compress data.\n";
-                    return EXIT_FAILURE;
-                }
-        }
+    for(const auto& entry : std::filesystem::directory_iterator(directory_path)) {
+        TreeEntry tree_entry;
+        process_entry(entry, tree_entry);
+        tree_entries.push_back(tree_entry);
     }
 
-    // sort the enties lexicographically
-    std::sort(entries.begin(), entries.end(), [](const TreeEntry& a, const TreeEntry& b) {
+    // sort the entries lexicographically
+    std::sort(tree_entries.begin(), tree_entries.end(), [](const TreeEntry& a, const TreeEntry& b) {
         return a.name < b.name;
     });
 
-    // accumulate the entries into a string
-    std::string tree_content;
-    for (const TreeEntry& entry : entries) {
-        tree_content += entry.mode + ' ' + entry.type + ' ' + entry.name + '\0';
+    // construct the string for the tree object
+    std::stringstream tree_content;
+    for(const auto& entry : tree_entries) {
+        tree_content << entry.mode << " " << entry.type << " " << entry.sha << '\0';
     }
 
-    // hash the tree
-    std::string tree_hash = compute_sha1(tree_content);
+    // hash the tree content
+    std::string tree_hash = compute_sha1(tree_content.str());
+    return tree_hash;
+}
 
-    // write the hash to the object file
-    std::string object_dir = ".git/objects/" + tree_hash.substr(0, 2);
-    std::filesystem::create_directory(object_dir);
-    std::string object_path = object_dir + "/" + tree_hash.substr(2);
-    std::ofstream object_file(object_path, std::ios::binary);
-    if (object_file.fail()) {
-        std::cerr << "Failed to create object file.\n";
-        return EXIT_FAILURE;
+void process_entry (const std::filesystem::directory_entry& entry, TreeEntry& tree_entry) {
+    tree_entry.name = entry.path().filename().string();
+    if(std::filesystem::is_regular_file(entry.status())) {
+        tree_entry.mode = "100644";
+        tree_entry.type = "blob";
+        tree_entry.sha = compute_sha1(entry.path().string());
     }
-    object_file.write(tree_hash.c_str(), tree_hash.size());
-    object_file.close();
+    else if(std::filesystem::is_directory(entry.status())) {
+        tree_entry.mode = "40000";
+        tree_entry.type = "tree";
+        tree_entry.sha = calculate_directory_hash(entry.path());
+    }
+}
 
-    //std::cout << tree_hash << '\n';
+int write_tree () {
+    std::filesystem::path current_path = std::filesystem::current_path();
 
+    std::vector<TreeEntry> tree_entries;
+    for (const auto& entry : std::filesystem::directory_iterator(current_path)) {
+        TreeEntry tree_entry;
+        process_entry(entry, tree_entry);
+        tree_entries.push_back(tree_entry);
+    }
+
+    // sort the entries lexicographically
+    std::sort(tree_entries.begin(), tree_entries.end(), [](const TreeEntry& a, const TreeEntry& b) {
+        return a.name < b.name;
+    });
+
+    // construct the string for the tree object
+    std::stringstream tree_content;
+    for (const auto& entry : tree_entries) {
+        tree_content << entry.mode << " " << entry.type << " " << entry.sha << '\0';
+    }
+
+    // hash the tree content
+    std::string tree_hash = compute_sha1(tree_content.str());
+    
     return EXIT_SUCCESS;
 }
 
