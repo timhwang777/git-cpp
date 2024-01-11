@@ -9,6 +9,7 @@
 #include <iomanip>
 #include <openssl/sha.h>
 #include <algorithm>
+#include <numeric>
 #include <set>
 
 #include "zlib_implement.h"
@@ -230,21 +231,50 @@ std::string process_file (const::std::filesystem::path& path) {
     return hash_file_content(compressed_content);
 }
 
+std::string write_object (const std::string& content, const std::string& type) {
+    std::string header = type + " " + std::to_string(content.length()) + "\0";
+    std:: string object = header + content;
+
+    std::string hash = hash_file_content(object);
+
+    std::filesystem::path object_path = ".git/objects/" + hash.substr(0, 2) + "/" + hash.substr(2);
+    std::filesystem::create_directory(object_path.parent_path());
+
+    std::ofstream object_file(object_path, std::ios::binary);
+    object_file.write(object.c_str(), object.length());
+    object_file.close();
+
+    return hash;
+}
+
 std::string write_tree (const std::filesystem::path& directory) {
-    std::string tree_content;
+    std::string tree_entries;
 
     for(const auto& entry : std::filesystem::directory_iterator(directory)) {
+        std::string entry_name = entry.path().filename().string();
+        std::string entry_mode;
+        std::string entry_hash;
+
         if(std::filesystem::is_directory(entry.path())) {
-            tree_content += "40000 " + entry.path().filename().string() + "\0" + write_tree(entry.path());
+            entry_hash = write_tree(entry.path());
+            entry_mode = "40000";
         }
         else if(std::filesystem::is_regular_file(entry.path())) {
-            tree_content += "100644 " + entry.path().filename().string() + "\0" + process_file(entry.path());
+            std::string entry_content = process_file(entry.path());
+            entry_hash = write_object(entry_content, "blob");
+            entry_mode = "100644";
         }
         else {
             std::cerr << "Unknown file type.\n";
             //return EXIT_FAILURE;
         }
+
+        tree_entries += entry_mode + " " + entry_name + '\0' + entry_hash;
     }
+
+    std::string tree_contents = std::accumulate(tree_entries.begin(), tree_entries.end(), std::string());
+
+    return write_object(tree_contents, "tree");
     //return EXIT_SUCCESS;
 }
 
