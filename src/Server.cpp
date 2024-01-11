@@ -179,74 +179,73 @@ int ls_tree (const char* object_hash) {
     return EXIT_SUCCESS;
 }
 
-// Contingency declarations
-void process_entry (const std::filesystem::directory_entry& entry, TreeEntry& tree_entry);
-std::string calculate_directory_hash (const std::filesystem::path& directory_path);
+std::string hash_file_content (const std::string& content) {
+    unsigned char hash[20];
+    SHA1(reinterpret_cast<const unsigned char*>(content.c_str()), content.length(), hash);
 
-std::string calculate_directory_hash (const std::filesystem::path& directory_path) {
-    std::vector<TreeEntry> tree_entries;
-
-    for(const auto& entry : std::filesystem::directory_iterator(directory_path)) {
-        TreeEntry tree_entry;
-        process_entry(entry, tree_entry);
-        tree_entries.push_back(tree_entry);
+    std::stringstream ss;
+    for(unsigned char byte : hash) {
+        ss << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(byte);
     }
 
-    // sort the entries lexicographically
-    std::sort(tree_entries.begin(), tree_entries.end(), [](const TreeEntry& a, const TreeEntry& b) {
-        return a.name < b.name;
-    });
-
-    // construct the string for the tree object
-    std::stringstream tree_content;
-    for(const auto& entry : tree_entries) {
-        tree_content << entry.mode << " " << entry.type << " " << entry.sha << '\0';
-    }
-
-    // hash the tree content
-    std::string tree_hash = compute_sha1(tree_content.str());
-    return tree_hash;
+    return ss.str();
 }
 
-void process_entry (const std::filesystem::directory_entry& entry, TreeEntry& tree_entry) {
-    tree_entry.name = entry.path().filename().string();
-    if(std::filesystem::is_regular_file(entry.status())) {
-        tree_entry.mode = "100644";
-        tree_entry.type = "blob";
-        tree_entry.sha = compute_sha1(entry.path().string());
+std::string process_file (const::std::filesystem::path& path) {
+    std::string compressed_content;
+    {
+        FILE* inputFile = fopen(path.string().c_str(), "rb");
+        if (!inputFile) {
+            std::cerr << "Failed to open input file.\n";
+            return {};
+        }
+
+        // Create a temporary file for the compressed data
+        FILE* outputFile = tmpfile();
+        if (!outputFile) {
+            std::cerr << "Failed to create temporary file.\n";
+            fclose(inputFile);
+            return {};
+        }
+
+        if (compress(inputFile, outputFile) != EXIT_SUCCESS) {
+            std::cerr << "Failed to compress file.\n";
+            fclose(inputFile);
+            fclose(outputFile);
+            return {};
+        }
+
+        // Rewind the output file and read the compressed data into a string
+        rewind(outputFile);
+        char buffer[4096];
+        while (!feof(outputFile)) {
+            size_t bytesRead = fread(buffer, 1, sizeof(buffer), outputFile);
+            compressed_content.append(buffer, bytesRead);
+        }
+
+        fclose(inputFile);
+        fclose(outputFile);
     }
-    else if(std::filesystem::is_directory(entry.status())) {
-        tree_entry.mode = "40000";
-        tree_entry.type = "tree";
-        tree_entry.sha = calculate_directory_hash(entry.path());
-    }
+
+    return hash_file_content(compressed_content);
 }
 
-int write_tree () {
-    std::filesystem::path current_path = std::filesystem::current_path();
+std::string write_tree (const std::filesystem::path& directory) {
+    std::string tree_content;
 
-    std::vector<TreeEntry> tree_entries;
-    for (const auto& entry : std::filesystem::directory_iterator(current_path)) {
-        TreeEntry tree_entry;
-        process_entry(entry, tree_entry);
-        tree_entries.push_back(tree_entry);
+    for(const auto& entry : std::filesystem::directory_iterator(directory)) {
+        if(std::filesystem::is_directory(entry.path())) {
+            tree_content += "40000 " + entry.path().filename().string() + "\0" + write_tree(entry.path());
+        }
+        else if(std::filesystem::is_regular_file(entry.path())) {
+            tree_content += "100644 " + entry.path().filename().string() + "\0" + process_file(entry.path());
+        }
+        else {
+            std::cerr << "Unknown file type.\n";
+            //return EXIT_FAILURE;
+        }
     }
-
-    // sort the entries lexicographically
-    std::sort(tree_entries.begin(), tree_entries.end(), [](const TreeEntry& a, const TreeEntry& b) {
-        return a.name < b.name;
-    });
-
-    // construct the string for the tree object
-    std::stringstream tree_content;
-    for (const auto& entry : tree_entries) {
-        tree_content << entry.mode << " " << entry.type << " " << entry.sha << '\0';
-    }
-
-    // hash the tree content
-    std::string tree_hash = compute_sha1(tree_content.str());
-
-    return EXIT_SUCCESS;
+    //return EXIT_SUCCESS;
 }
 
 int main(int argc, char* argv[]) {
@@ -328,10 +327,9 @@ int main(int argc, char* argv[]) {
             return EXIT_FAILURE;
         }
 
-        if (write_tree() != EXIT_SUCCESS) {
-            std::cerr << "Failed to write tree.\n";
-            return EXIT_FAILURE;
-        }
+        std::filesystem::path current_path = std::filesystem::current_path();
+        std::string tree_hash = write_tree(current_path);
+        std::cout << tree_hash << std::endl;
     }
     else {
         std::cerr << "Unknown command " << command << '\n';
