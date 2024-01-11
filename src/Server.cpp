@@ -248,12 +248,13 @@ std::string write_object (const std::string& content, const std::string& type) {
 }
 
 std::string write_tree (const std::filesystem::path& directory) {
-    std::string tree_entries;
+    std::vector<std::string> tree_entries;
 
     for(const auto& entry : std::filesystem::directory_iterator(directory)) {
         std::string entry_name = entry.path().filename().string();
         std::string entry_mode;
         std::string entry_hash;
+        std::string tree_entry;
 
         if(std::filesystem::is_directory(entry.path())) {
             entry_hash = write_tree(entry.path());
@@ -269,12 +270,14 @@ std::string write_tree (const std::filesystem::path& directory) {
             //return EXIT_FAILURE;
         }
 
-        tree_entries += entry_mode + " " + entry_name + '\0' + entry_hash;
+        tree_entry = entry_mode + " " + entry_name + '\0' + entry_hash;
+        tree_entries.push_back(std::move(tree_entry));
     }
+    // sor the tree entries
+    std::sort(tree_entries.begin(), tree_entries.end());
+    std::string tree_content = std::accumulate(tree_entries.begin(), tree_entries.end(), std::string());
 
-    std::string tree_contents = std::accumulate(tree_entries.begin(), tree_entries.end(), std::string());
-
-    return write_object(tree_contents, "tree");
+    return write_object(tree_content, "tree");
     //return EXIT_SUCCESS;
 }
 
