@@ -233,10 +233,16 @@ std::string hash_digest (const std::string& input) {
 
 std::string write_tree (const std::string& directory) {
     std::vector<std::string> tree_entries;
+    
     const std::vector<std::string> skip = {
         "./.git", "./server", "./CMakeCache.txt", 
         "./CMakeFiles", "./Makefile", "./cmake_install.cmake"
     };
+    // Convert skip paths to absolute paths
+    for (auto& path : skip) {
+        path = std::filesystem::absolute(path).string();
+    }
+
 
     for (const auto& entry : std::filesystem::directory_iterator(directory)) {
         std::string path = entry.path().string();
