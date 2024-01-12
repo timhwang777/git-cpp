@@ -233,39 +233,30 @@ std::string hash_digest (const std::string& input) {
 
 std::string write_tree (const std::string& directory) {
     std::vector<std::string> tree_entries;
-    
-    std::vector<std::string> skip = {
-        "./.git", "./server", "./CMakeCache.txt", 
-        "./CMakeFiles", "./Makefile", "./cmake_install.cmake"
-    };
-    // Convert skip paths to absolute paths
-    /*for (auto& path : skip) {
-        path = std::filesystem::absolute(path).string();
-    }*/
-
 
     for (const auto& entry : std::filesystem::directory_iterator(directory)) {
         std::string path = entry.path();
         //std::cout << "Entry path: " << path << '\n';
         
-        /*if (std::find(skip.begin(), skip.end(), path) != skip.end()) {
-            std::cout << "Skipping " << path << '\n';
-            continue;
-        }*/
-
-        bool should_skip = false;
-        for (const auto& skip_path : skip) {
-            if (path.find(skip_path) != std::string::npos) {
-                should_skip = true;
-                break;
-            }
-        }
-
-        if (should_skip) {
-            std::cout << "Skipping " << path << '\n';
+        if (path.compare("./.git") == 0) {
             continue;
         }
-
+        if (path.compare("./server") == 0) {
+            continue;
+        }
+        if (path.compare("./CMakeCache.txt") == 0) {
+            continue;
+        }
+        if (path.compare("./CMakeFiles") == 0) {
+            continue;
+        }
+        if (path.compare("./Makefile") == 0) {
+            continue;
+        }
+        if (path.compare("./cmake_install.cmake") == 0) {
+            continue;
+        }
+        
         std::error_code ec;
         std::string entry_type = std::filesystem::is_directory(path, ec) ? "40000 " : "100644 ";
         std::string relative_path = path.substr(path.find(directory) + directory.length() + 1);
