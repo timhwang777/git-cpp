@@ -84,7 +84,7 @@ void compress_and_store (const std::string& hash, const std::string& header) {
     }
     
     std::string object_file_path = object_path + hash.substr(2, 38);
-    std::cout << "object file path: " << object_file_path << std::endl;
+    //std::cout << "object file path: " << object_file_path << std::endl;
     if (!std::filesystem::exists(object_file_path)) {
         FILE* output = fopen(object_file_path.c_str(), "wb");
         if (compress(input, output) != EXIT_SUCCESS) {
@@ -354,7 +354,7 @@ int main(int argc, char* argv[]) {
         }
 
         std::filesystem::path current_path = std::filesystem::current_path();
-        std::string tree_hash = write_tree(current_path);
+        std::string tree_hash = write_tree(current_path.string());
         std::cout << tree_hash << std::endl;
     }
     else {
