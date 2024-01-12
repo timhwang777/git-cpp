@@ -76,7 +76,7 @@ std::vector<char> compress_data(const std::string& data) {
 }
 
 void compress_and_store (const std::string& hash, const std::string& header) {
-    FILE* input = fmemopen((void*) header.c_str(), header.length(), "r");
+    FILE* input = fmemopen((void*) header.c_str(), header.length(), "rb");
     std::string hash_folder = hash.substr(0, 2);
     std::string object_path = "./git/objects/" + hash_folder + '/';
     if (!std::filesystem::exists(object_path)) {
@@ -86,7 +86,7 @@ void compress_and_store (const std::string& hash, const std::string& header) {
     std::string object_file_path = object_path + hash.substr(2, 38);
     std::cout << "object file path: " << object_file_path << std::endl;
     if (!std::filesystem::exists(object_file_path)) {
-        FILE* output = fopen(object_file_path.c_str(), "w");
+        FILE* output = fopen(object_file_path.c_str(), "wb");
         if (compress(input, output) != EXIT_SUCCESS) {
             std::cerr << "Failed to compress data.\n";
             return;
