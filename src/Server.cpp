@@ -258,18 +258,25 @@ std::string write_tree (const std::string& directory) {
         tree_entries.emplace_back(path + '\0' + entry_type + relative_path + '\0' + hash);
     }
 
-    // sort the entries
+    // sort the entries based on the absolute path
     std::sort(tree_entries.begin(), tree_entries.end());
 
+    // delete the path from the beginning of each entry
+    int bytes = 0;
+    for (auto& entry : tree_entries) {
+        entry = entry.substr(entry.find('\0') + 1);
+        bytes += entry.length();
+    }
+
     // concatenate the entries
-    std::string tree_content = "tree";
+    std::string tree_content = "tree " + std::to_string(bytes) + '\0';
     for (const auto& entry : tree_entries) {
-        tree_content += entry + '\0';
+        tree_content += entry;
     }
 
     // storing the tree object
     std::string tree_hash = compute_sha1(tree_content, false);
-    compress_and_store(tree_hash, tree_content);
+    compress_and_store(tree_hash.c_str(), tree_content);
 
     return tree_hash;
 }
