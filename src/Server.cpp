@@ -114,7 +114,7 @@ std::string hash_object(std::string filepath, std::string type = "blob", bool pr
         std::string header = type + " " + std::to_string(content.size());
         std::string file_content = header + '\0' + content;
 
-        std::string hash = compute_sha1(file_content, true);
+        std::string hash = compute_sha1(file_content, false);
 
         /*
             todo: rewrite the the compress_and_store function
