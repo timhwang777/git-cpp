@@ -8,7 +8,7 @@
 
 int decompress(FILE* input, FILE* output) {
     // initialize decompression stream
-    std::cout << "Initializing decompression stream.\n";
+    //std::cout << "Initializing decompression stream.\n";
     z_stream stream = {0};
     if (inflateInit(&stream) != Z_OK) {
         std::cerr << "Failed to initialize decompression stream.\n";
