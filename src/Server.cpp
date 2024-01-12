@@ -234,7 +234,7 @@ std::string hash_digest (const std::string& input) {
 std::string write_tree (const std::string& directory) {
     std::vector<std::string> tree_entries;
     
-    const std::vector<std::string> skip = {
+    std::vector<std::string> skip = {
         "./.git", "./server", "./CMakeCache.txt", 
         "./CMakeFiles", "./Makefile", "./cmake_install.cmake"
     };
