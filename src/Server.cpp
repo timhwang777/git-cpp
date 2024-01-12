@@ -245,7 +245,7 @@ std::string write_tree (const std::string& directory) {
 
 
     for (const auto& entry : std::filesystem::directory_iterator(directory)) {
-        std::string path = entry.path().string();
+        std::string path = entry.path();
         //std::cout << "Entry path: " << path << '\n';
         
         /*if (std::find(skip.begin(), skip.end(), path) != skip.end()) {
