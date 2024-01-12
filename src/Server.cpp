@@ -233,9 +233,10 @@ std::string hash_digest (const std::string& input) {
 
 std::string write_tree (const std::string& directory) {
     std::vector<std::string> tree_entries;
+    std::string path;
 
     for (const auto& entry : std::filesystem::directory_iterator(directory)) {
-        std::string path = entry.path();
+        path = entry.path();
         //std::cout << "Entry path: " << path << '\n';
         
         if (path.compare("./.git") == 0) {
@@ -245,6 +246,7 @@ std::string write_tree (const std::string& directory) {
             continue;
         }
         if (path.compare("./CMakeCache.txt") == 0) {
+            std::cout << "CMakeCache.txt skip" << std::endl;
             continue;
         }
         if (path.compare("./CMakeFiles") == 0) {
@@ -256,7 +258,7 @@ std::string write_tree (const std::string& directory) {
         if (path.compare("./cmake_install.cmake") == 0) {
             continue;
         }
-        
+
         std::error_code ec;
         std::string entry_type = std::filesystem::is_directory(path, ec) ? "40000 " : "100644 ";
         std::string relative_path = path.substr(path.find(directory) + directory.length() + 1);
