@@ -87,7 +87,10 @@ void compress_and_store (const std::string& hash, const std::string& header) {
     std::cout << "object file path: " << object_file_path << std::endl;
     if (!std::filesystem::exists(object_file_path)) {
         FILE* output = fopen(object_file_path.c_str(), "w");
-        compress(input, output);
+        if (compress(input, output) != EXIT_SUCCESS) {
+            std::cerr << "Failed to compress data.\n";
+            return;
+        }
         fclose(output);
     }
 
