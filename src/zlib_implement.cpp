@@ -65,7 +65,7 @@ int decompress(FILE* input, FILE* output) {
 
 int compress(FILE* input, FILE* output) {
     // Initialize compression stream.
-    std::cout << "Initializing compression stream.\n";
+    //std::cout << "Initializing compression stream.\n";
     z_stream stream = {0};
     if (deflateInit(&stream, Z_DEFAULT_COMPRESSION) != Z_OK) {
         std::cerr << "Failed to initialize compression stream.\n";
