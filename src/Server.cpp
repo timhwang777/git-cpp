@@ -248,6 +248,7 @@ std::string write_tree (const std::string& directory) {
         std::string path = entry.path().string();
         
         if (std::find(skip.begin(), skip.end(), path) != skip.end()) {
+            std::cout << "Skipping " << path << '\n';
             continue;
         }
 
