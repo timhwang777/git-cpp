@@ -252,7 +252,7 @@ std::string write_tree (const std::string& directory) {
         std::string entry_type = std::filesystem::is_directory(path, ec) ? "40000 " : "100644 ";
         std::string relative_path = path.substr(path.find(directory) + directory.length() + 1);
         std::string hash = std::filesystem::is_directory(path, ec) ?
-                           hash_digest(write_tree(path)):
+                           hash_digest(write_tree(path.c_str())):
                            hash_digest(hash_object(path.c_str(), "blob", false));
         
         tree_entries.emplace_back(entry_type + relative_path + '\0' + hash);
