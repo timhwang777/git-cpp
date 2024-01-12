@@ -233,29 +233,18 @@ std::string hash_digest (const std::string& input) {
 
 std::string write_tree (const std::string& directory) {
     std::vector<std::string> tree_entries;
-    std::string path;
+    std::vector<std::string> skip = {
+        ".git", "server", "CMakeCache.txt", 
+        "CMakeFiles", "Makefile", "cmake_install.cmake"
+    };
 
     for (const auto& entry : std::filesystem::directory_iterator(directory)) {
-        path = entry.path();
+        std::string path = entry.path().string();
         //std::cout << "Entry path: " << path << '\n';
         
-        if (path.compare("./.git") == 0) {
-            continue;
-        }
-        if (path.compare("./server") == 0) {
-            continue;
-        }
-        if (path.compare("./CMakeCache.txt") == 0) {
-            std::cout << "CMakeCache.txt skip" << std::endl;
-            continue;
-        }
-        if (path.compare("./CMakeFiles") == 0) {
-            continue;
-        }
-        if (path.compare("./Makefile") == 0) {
-            continue;
-        }
-        if (path.compare("./cmake_install.cmake") == 0) {
+        if (std::any_of(skip.begin(), skip.end(), [&path](const std::string& s) {
+            return path.find(s) != std::string::npos;
+        })) {
             continue;
         }
 
