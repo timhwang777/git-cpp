@@ -239,16 +239,29 @@ std::string write_tree (const std::string& directory) {
         "./CMakeFiles", "./Makefile", "./cmake_install.cmake"
     };
     // Convert skip paths to absolute paths
-    for (auto& path : skip) {
+    /*for (auto& path : skip) {
         path = std::filesystem::absolute(path).string();
-    }
+    }*/
 
 
     for (const auto& entry : std::filesystem::directory_iterator(directory)) {
         std::string path = entry.path().string();
-        std::cout << "Entry path: " << path << '\n';
+        //std::cout << "Entry path: " << path << '\n';
         
-        if (std::find(skip.begin(), skip.end(), path) != skip.end()) {
+        /*if (std::find(skip.begin(), skip.end(), path) != skip.end()) {
+            std::cout << "Skipping " << path << '\n';
+            continue;
+        }*/
+
+        bool should_skip = false;
+        for (const auto& skip_path : skip) {
+            if (path.find(skip_path) != std::string::npos) {
+                should_skip = true;
+                break;
+            }
+        }
+
+        if (should_skip) {
             std::cout << "Skipping " << path << '\n';
             continue;
         }
