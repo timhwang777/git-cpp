@@ -77,7 +77,7 @@ std::vector<char> compress_data(const std::string& data) {
 
 void compress_and_store (const std::string& hash, const std::string& header) {
     FILE* input = fmemopen((void*) header.c_str(), header.length(), "r");
-    std::string hash_folder(hash, 2);
+    std::string hash_folder = hash.substr(0, 2);
     std::string object_path = "./git/objects/" + hash_folder + '/';
     if (!std::filesystem::exists(object_path)) {
         std::filesystem::create_directories(object_path);
