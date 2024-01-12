@@ -45,7 +45,7 @@ int cat_file(const char* filepath) {
         return EXIT_SUCCESS;
 }
 
-std::string compute_sha1(const std::string& data) {
+std::string compute_sha1(const std::string& data, bool print_out = false) {
     unsigned char hash[20]; // 160 bits long for SHA1
     SHA1(reinterpret_cast<const unsigned char*>(data.c_str()), data.size(), hash);
     std::stringstream ss;
@@ -54,7 +54,10 @@ std::string compute_sha1(const std::string& data) {
         ss << std::setw(2) << static_cast<int>(byte);
     }
 
-    std::cout << ss.str() << std::endl;
+    if (print_out)  {
+        std::cout << ss.str() << std::endl;
+    }
+
     return ss.str();
 }
 
@@ -72,12 +75,30 @@ std::vector<char> compress_data(const std::string& data) {
     return compressed_data;
 }
 
-int hash_object(std::string filepath) {
+void compress_and_store (const std::string& hash, const std::string& header) {
+    FILE* input = fmemopen((void*) header.c_str(), header.length(), "r");
+    std::string hash_folder(hash, 2);
+    std::string object_path = "./git/objects/" + hash_folder + '/';
+    if (!std::filesystem::exists(object_path)) {
+        std::filesystem::create_directories(object_path);
+    }
+    
+    std::string object_file_path = object_path + hash.substr(2, 39);
+    if (!std::filesystem::exists(object_file_path)) {
+        FILE* output = fopen(object_file_path.c_str(), "w");
+        compress(input, output);
+        fclose(output);
+    }
+
+    fclose(input);
+}
+
+std::string hash_object(std::string filepath, std::string type = "blob", bool print_out = false) {
         // open the file
         std::ifstream inputFile(filepath, std::ios::binary);
         if(inputFile.fail()) {
             std::cerr << "Failed to open file.\n";
-            return EXIT_FAILURE;
+            return {};
         }
 
         // read the file
@@ -86,11 +107,15 @@ int hash_object(std::string filepath) {
         );
 
         // create the header
-        std::string header = "blob " + std::to_string(content.size());
+        std::string header = type + " " + std::to_string(content.size());
         std::string file_content = header + '\0' + content;
 
-        std::string hash = compute_sha1(file_content);
-        auto compressed_data = compress_data(file_content);
+        std::string hash = compute_sha1(file_content, true);
+
+        /*
+            todo: rewrite the the compress_and_store function
+        */
+        /*auto compressed_data = compress_data(file_content);
         if (compressed_data.empty()) {
             std::cerr << "Failed to compress data.\n";
             return EXIT_FAILURE;
@@ -107,11 +132,16 @@ int hash_object(std::string filepath) {
             return EXIT_FAILURE;
         }
         object_file.write(compressed_data.data(), compressed_data.size());
-        object_file.close();
+        object_file.close();*/
 
-        std::cout << hash << std::endl;
+        compress_and_store(hash, file_content);
+        inputFile.close();
 
-        return EXIT_SUCCESS;
+        if (print_out) {
+            std::cout << hash << std::endl;
+        }
+
+        return hash;
 }
 
 std::set<std::string> parse_tree_object (FILE* tree_object) {
@@ -180,105 +210,61 @@ int ls_tree (const char* object_hash) {
     return EXIT_SUCCESS;
 }
 
-std::string hash_file_content (const std::string& content) {
-    unsigned char hash[20];
-    SHA1(reinterpret_cast<const unsigned char*>(content.c_str()), content.length(), hash);
+/*
+    todo: hash_digect, hash_object, compress_and_store
+*/
 
-    std::stringstream ss;
-    for(unsigned char byte : hash) {
-        ss << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(byte);
+std::string hash_digest (const std::string& input) {
+    std::string condensed;
+
+    for (size_t i = 0; i < input.length(); i += 2) {
+        std::string byte_string = input.substr(i, 2);
+        char byte = static_cast<char>(std::stoi(byte_string, nullptr, 16));
+
+        condensed.push_back(byte);
     }
 
-    return ss.str();
+    return condensed;
 }
 
-std::string process_file (const::std::filesystem::path& path) {
-    std::string compressed_content;
-    {
-        FILE* inputFile = fopen(path.string().c_str(), "rb");
-        if (!inputFile) {
-            std::cerr << "Failed to open input file.\n";
-            return {};
-        }
-
-        // Create a temporary file for the compressed data
-        FILE* outputFile = tmpfile();
-        if (!outputFile) {
-            std::cerr << "Failed to create temporary file.\n";
-            fclose(inputFile);
-            return {};
-        }
-
-        if (compress(inputFile, outputFile) != EXIT_SUCCESS) {
-            std::cerr << "Failed to compress file.\n";
-            fclose(inputFile);
-            fclose(outputFile);
-            return {};
-        }
-
-        // Rewind the output file and read the compressed data into a string
-        rewind(outputFile);
-        char buffer[4096];
-        while (!feof(outputFile)) {
-            size_t bytesRead = fread(buffer, 1, sizeof(buffer), outputFile);
-            compressed_content.append(buffer, bytesRead);
-        }
-
-        fclose(inputFile);
-        fclose(outputFile);
-    }
-
-    return hash_file_content(compressed_content);
-}
-
-std::string write_object (const std::string& content, const std::string& type) {
-    std::string header = type + " " + std::to_string(content.length()) + "\0";
-    std:: string object = header + content;
-
-    std::string hash = hash_file_content(object);
-
-    std::filesystem::path object_path = ".git/objects/" + hash.substr(0, 2) + "/" + hash.substr(2);
-    std::filesystem::create_directory(object_path.parent_path());
-
-    std::ofstream object_file(object_path, std::ios::binary);
-    object_file.write(object.c_str(), object.length());
-    object_file.close();
-
-    return hash;
-}
-
-std::string write_tree (const std::filesystem::path& directory) {
+std::string write_tree (const std::string& directory) {
     std::vector<std::string> tree_entries;
+    const std::vector<std::string> skip = {
+        "./.git", "./server", "./CMakeCache.txt", 
+        "./CMakeFiles", "./Makefile", "./cmake_install.cmake"
+    };
 
-    for(const auto& entry : std::filesystem::directory_iterator(directory)) {
-        std::string entry_name = entry.path().filename().string();
-        std::string entry_mode;
-        std::string entry_hash;
-        std::string tree_entry;
-
-        if(std::filesystem::is_directory(entry.path())) {
-            entry_hash = write_tree(entry.path());
-            entry_mode = "40000";
-        }
-        else if(std::filesystem::is_regular_file(entry.path())) {
-            std::string entry_content = process_file(entry.path());
-            entry_hash = write_object(entry_content, "blob");
-            entry_mode = "100644";
-        }
-        else {
-            std::cerr << "Unknown file type.\n";
-            //return EXIT_FAILURE;
+    for (const auto& entry : std::filesystem::directory_iterator(directory)) {
+        std::string path = entry.path().string();
+        
+        if (std::find(skip.begin(), skip.end(), path) != skip.end()) {
+            continue;
         }
 
-        tree_entry = entry_mode + " " + entry_name + '\0' + entry_hash;
-        tree_entries.push_back(std::move(tree_entry));
+        std::error_code ec;
+        std::string entry_type = std::filesystem::is_directory(path, ec) ? "40000 " : "100644 ";
+        std::string relative_path = path.substr(path.find(directory) + directory.length() + 1);
+        std::string hash = std::filesystem::is_directory(path, ec) ?
+                           hash_digest(write_tree(path)):
+                           hash_digest(hash_object(path.c_str(), "blob", false));
+        
+        tree_entries.emplace_back(entry_type + relative_path + '\0' + hash);
     }
-    // sor the tree entries
-    std::sort(tree_entries.begin(), tree_entries.end());
-    std::string tree_content = std::accumulate(tree_entries.begin(), tree_entries.end(), std::string());
 
-    return write_object(tree_content, "tree");
-    //return EXIT_SUCCESS;
+    // sort the entries
+    std::sort(tree_entries.begin(), tree_entries.end());
+
+    // concatenate the entries
+    std::string tree_content = "tree";
+    for (const auto& entry : tree_entries) {
+        tree_content += entry + '\0';
+    }
+
+    // storing the tree object
+    std::string tree_hash = compute_sha1(tree_content, false);
+    compress_and_store(tree_hash, tree_content);
+
+    return tree_hash;
 }
 
 int main(int argc, char* argv[]) {
@@ -336,10 +322,13 @@ int main(int argc, char* argv[]) {
         std::string fileName = argv[3];
 
         // hash the object
-        if (hash_object(fileName) != EXIT_SUCCESS) {
+        std::string hash = hash_object(fileName, "blob", false);
+        if (hash.empty()) {
             std::cerr << "Failed to hash object.\n";
             return EXIT_FAILURE;
         }
+        
+        std::cout << hash << std::endl;
     }
     else if (command == "ls-tree") {
         if (argc < 4) {
