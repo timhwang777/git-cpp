@@ -83,7 +83,7 @@ void compress_and_store (const std::string& hash, const std::string& header) {
         std::filesystem::create_directories(object_path);
     }
     
-    std::string object_file_path = object_path + hash.substr(2, 39);
+    std::string object_file_path = object_path + hash.substr(2, 38);
     if (!std::filesystem::exists(object_file_path)) {
         FILE* output = fopen(object_file_path.c_str(), "w");
         compress(input, output);
@@ -327,7 +327,7 @@ int main(int argc, char* argv[]) {
             std::cerr << "Failed to hash object.\n";
             return EXIT_FAILURE;
         }
-        
+
         std::cout << hash << std::endl;
     }
     else if (command == "ls-tree") {
