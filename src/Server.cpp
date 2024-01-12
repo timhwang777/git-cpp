@@ -255,7 +255,7 @@ std::string write_tree (const std::string& directory) {
                            hash_digest(write_tree(path.c_str())):
                            hash_digest(hash_object(path.c_str(), "blob", false));
         
-        tree_entries.emplace_back(entry_type + relative_path + '\0' + hash);
+        tree_entries.emplace_back(path + '\0' + entry_type + relative_path + '\0' + hash);
     }
 
     // sort the entries
