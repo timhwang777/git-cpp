@@ -282,8 +282,8 @@ std::string write_tree (const std::string& directory) {
 }
 
 std::string commit_tree (std::string tree_sha, std::string parent_sha, std::string message) {
-    std::string author = "Tim@Davis-Dorm-WSL2 <timhwang@ucdavis.edu>";
-    std::string committer = "Tim@Davis-Dorm-WSL2 <timhwang@ucdavis.edu>";
+    std::string author = "John Doe <john.doe@gmail.com>";
+    std::string committer = "John Doe <john.doe@gmail.com";
     std::string timestamp = std::to_string(std::time(nullptr));
 
     std::string commit_content = "tree " + tree_sha + "\n" +
@@ -291,9 +291,13 @@ std::string commit_tree (std::string tree_sha, std::string parent_sha, std::stri
                                  "author " + author + " " + timestamp + " -0800\n" +
                                  "committer " + committer + " " + timestamp + " -0800\n" +
                                  "\n" + message + "\n";
+    
+    std::cout << "commit: "<<commit_content << std::endl;
 
     std::string header = "commit " + std::to_string(commit_content.size()) + "\0";
     commit_content = header + commit_content;
+
+    std::cout << "header: "<<commit_content << std::endl;
 
     std::string commit_hash = compute_sha1(commit_content, false);
     compress_and_store(commit_hash.c_str(), commit_content);
