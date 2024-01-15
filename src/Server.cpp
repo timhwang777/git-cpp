@@ -292,8 +292,7 @@ std::string commit_tree (std::string tree_sha, std::string parent_sha, std::stri
                                  "committer " + committer + " " + timestamp + " -0500\n" +
                                  "\n" + message + "\n";
 
-    int bytes = commit_content.length();
-    commit_content = "commit " + std::to_string(bytes) + "\0" + commit_content;
+    commit_content = "commit " + std::to_string(commit_content.size()) + "\0" + commit_content;
 
     std::string commit_hash = compute_sha1(commit_content, false);
     compress_and_store(commit_hash.c_str(), commit_content);
