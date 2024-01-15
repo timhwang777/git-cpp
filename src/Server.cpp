@@ -11,15 +11,15 @@
 #include <algorithm>
 #include <numeric>
 #include <set>
-
+#include <ctime>
 #include "zlib_implement.h"
 
-struct TreeEntry {
+/*struct TreeEntry {
     std::string name;
     std::string mode;
     std::string type;
     std::string sha;
-};
+};*/
 
 /* Functions */
 int cat_file(const char* filepath) {
@@ -75,8 +75,8 @@ std::vector<char> compress_data(const std::string& data) {
     return compressed_data;
 }
 
-void compress_and_store (const std::string& hash, const std::string& header) {
-    FILE* input = fmemopen((void*) header.c_str(), header.length(), "rb");
+void compress_and_store (const std::string& hash, const std::string& content) {
+    FILE* input = fmemopen((void*) content.c_str(), content.length(), "rb");
     std::string hash_folder = hash.substr(0, 2);
     std::string object_path = ".git/objects/" + hash_folder + '/';
     if (!std::filesystem::exists(object_path)) {
@@ -110,7 +110,7 @@ std::string hash_object(std::string filepath, std::string type = "blob", bool pr
             (std::istreambuf_iterator<char>(inputFile)), std::istreambuf_iterator<char>()
         );
 
-        // create the header
+        // create the content
         std::string header = type + " " + std::to_string(content.size());
         std::string file_content = header + '\0' + content;
 
@@ -281,6 +281,26 @@ std::string write_tree (const std::string& directory) {
     return tree_hash;
 }
 
+std::string commit_tree (std::string tree_sha, std::string parent_sha, std::string message) {
+    std::string author = "John Doe <john.doe@gmail.com>";
+    std::string committer = "John Doe <john.doe@gmail.com";
+    std::string timestamp = std::to_string(std::time(nullptr));
+
+    std::string commit_content = "tree " + tree_sha + "\n" +
+                                 "parent " + parent_sha + "\n" +
+                                 "author " + author + " " + timestamp + " +0000\n" +
+                                 "committer " + committer + " " + timestamp + " +0000\n" +
+                                 "\n" + message + "\n";
+
+    int bytes = commit_content.length();
+    commit_content = "commit " + std::to_string(bytes) + "\0" + commit_content;
+
+    std::string commit_hash = compute_sha1(commit_content, false);
+    compress_and_store(commit_hash.c_str(), commit_content);
+
+    return commit_hash;
+}
+
 int main(int argc, char* argv[]) {
     if (argc < 2) {
         std::cerr << "No command provided.\n";
@@ -366,6 +386,19 @@ int main(int argc, char* argv[]) {
         std::filesystem::path current_path = std::filesystem::current_path();
         std::string tree_hash = write_tree(current_path.string());
         std::cout << tree_hash << std::endl;
+    }
+    else if (command == "commit-tree") {
+        if (argc < 7) {
+            std::cerr << "Too few arguments.\n";
+            return EXIT_FAILURE;
+        }
+
+        std::string tree_sha = argv[2];
+        std::string parent_sha = argv[4];
+        std::string message = argv[6];
+        
+        std::string commit_hash = commit_tree(tree_sha, parent_sha, message);
+        std::cout << commit_hash << std::endl;
     }
     else {
         std::cerr << "Unknown command " << command << '\n';
