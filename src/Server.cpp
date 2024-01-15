@@ -294,7 +294,7 @@ std::string commit_tree (std::string tree_sha, std::string parent_sha, std::stri
     
     //std::cout << "commit: "<< commit_content << std::endl;
 
-    std::string header = "commit " + std::to_string(commit_content.length()) + "\0";
+    std::string header = "commit " + std::to_string(commit_content.length()) + " ";
     commit_content = header + commit_content;
 
     //std::cout << "header: "<< commit_content << std::endl;
