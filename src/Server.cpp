@@ -288,8 +288,8 @@ std::string commit_tree (std::string tree_sha, std::string parent_sha, std::stri
 
     std::string commit_content = "tree " + tree_sha + "\n" +
                                  "parent " + parent_sha + "\n" +
-                                 "author " + author + " " + timestamp + " +0000\n" +
-                                 "committer " + committer + " " + timestamp + " +0000\n" +
+                                 "author " + author + " " + timestamp + " -0500\n" +
+                                 "committer " + committer + " " + timestamp + " -0500\n" +
                                  "\n" + message + "\n";
 
     int bytes = commit_content.length();
