@@ -288,11 +288,12 @@ std::string commit_tree (std::string tree_sha, std::string parent_sha, std::stri
 
     std::string commit_content = "tree " + tree_sha + "\n" +
                                  "parent " + parent_sha + "\n" +
-                                 "author " + author + " " + timestamp + " -0500\n" +
-                                 "committer " + committer + " " + timestamp + " -0500\n" +
+                                 "author " + author + " " + timestamp + " +0000\n" +
+                                 "committer " + committer + " " + timestamp + " +0000\n" +
                                  "\n" + message + "\n";
 
-    commit_content = "commit " + std::to_string(commit_content.size()) + "\0" + commit_content;
+    std::string header = "commit " + std::to_string(commit_content.size()) + "\0";
+    commit_content = header + commit_content;
 
     std::string commit_hash = compute_sha1(commit_content, false);
     compress_and_store(commit_hash.c_str(), commit_content);
