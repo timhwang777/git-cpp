@@ -282,8 +282,8 @@ std::string write_tree (const std::string& directory) {
 }
 
 std::string commit_tree (std::string tree_sha, std::string parent_sha, std::string message) {
-    std::string author = "John Doe <john.doe@gmail.com>";
-    std::string committer = "John Doe <john.doe@gmail.com";
+    std::string author = "Tim@Davis-Dorm-WSL2 <timhwang@ucdavis.edu>";
+    std::string committer = "Tim@Davis-Dorm-WSL2 <timhwang@ucdavis.edu>";
     std::string timestamp = std::to_string(std::time(nullptr));
 
     std::string commit_content = "tree " + tree_sha + "\n" +
