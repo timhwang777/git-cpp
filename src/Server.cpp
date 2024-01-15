@@ -398,7 +398,7 @@ int main(int argc, char* argv[]) {
         std::string message = argv[6];
         
         std::string commit_hash = commit_tree(tree_sha, parent_sha, message);
-        std::cout << commit_hash << std::endl;
+        std::cout << commit_hash;
     }
     else {
         std::cerr << "Unknown command " << command << '\n';
