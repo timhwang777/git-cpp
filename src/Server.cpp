@@ -386,7 +386,7 @@ std::string apply_delta (const std::string& delta_contents, const std::string& b
 
     // iterate through the delta contents
     while (current_position_in_delta < delta_contents.length()) {
-        usigned char current_instruction = delta_contents[current_position_in_delta++];
+        unsigned char current_instruction = delta_contents[current_position_in_delta++];
 
         // check if the highest bit of the instruction byte is set
         if (current_instruction & 0x80) {
@@ -535,7 +535,7 @@ int clone (std::string url, std::string dir) {
             base_object_contents = base_object_contents.substr(base_object_contents.find('\0') + 1); // remove the hash
 
             // apply delta to base object
-            std::string delta_contents = decompress_string(pack.substr(content_posistion));
+            std::string delta_contents = decompress_string(pack.substr(current_position));
             std::string reconstructed_contents = apply_delta(delta_contents, base_object_contents);
 
             // update master commits if hash matches
