@@ -76,10 +76,10 @@ std::string compute_sha1 (const std::string& data, bool print_out = false) {
     return ss.str();
 }
 
-void compress_and_store (const std::string& hash, const std::string& content) {
+void compress_and_store (const std::string& hash, const std::string& content, std::string dir = ".") {
     FILE* input = fmemopen((void*) content.c_str(), content.length(), "rb");
     std::string hash_folder = hash.substr(0, 2);
-    std::string object_path = ".git/objects/" + hash_folder + '/';
+    std::string object_path = dir + ".git/objects/" + hash_folder + '/';
     if (!std::filesystem::exists(object_path)) {
         std::filesystem::create_directories(object_path);
     }
@@ -523,28 +523,40 @@ int clone (std::string url, std::string dir) {
         }
         else if (object_type == 7) { // reference deltas
             // process reference deltas
-            std::string delta_hash_digest = pack.substr(current_position, 20);
-            std::string base_object_hash = digest_to_hash(delta_hash_digest);
-            current_position += 20;
+            std::string digest = pack.substr(pos, 20);
+            std::string hash = digest_to_hash(digest);
+            pos += 20;
 
             // read the base object's contents
-            std::ifstream base_object_file(dir + "/.git/objects/" + base_object_hash.insert(2, "/"));
+            std::ifstream file(dir + "/.git/objects/" + hash.insert(2, "/"));
             std::stringstream buffer;
-            buffer << base_object_file.rdbuf();
-            std::string base_object_contents = decompress_string(buffer.str());
-            base_object_contents = base_object_contents.substr(base_object_contents.find('\0') + 1); // remove the hash
+            buffer << file.rdbuf();
+            std::string file_contents = buffer.str();
+            std::string base_contents = decompress_string(file_contents);
+            
+            // extract and remove the object type
+            std::string object_type = base_contents.substr(0, base_contents.find(" "));
+            base_contents = base_contents.substr(base_contents.find('\0') + 1);
 
             // apply delta to base object
-            std::string delta_contents = decompress_string(pack.substr(current_position));
-            std::string reconstructed_contents = apply_delta(delta_contents, base_object_contents);
+            std::string delta_contents = decompress_string(pack.substr(pos));
 
-            // update master commits if hash matches
-            if (base_object_hash.compare(packhash) == 0) {
-                master_commit_contents = reconstructed_contents;
+            // reconstruct the object with its type and length
+            std::string object = do_delta(delta_contents, base_contents);
+            object = object_type + ' ' + std::to_string(object.length()) + '\0' + object;
+
+            // Store the object and compute its hash
+            std::string object_hash = gethash(object);
+            compress_and_store(object_hash.c_str(), object, dir);
+
+            // Advance position past the delta data
+            std::string compressed = compress_string(delta_contents);
+            pos += compressed.length();
+
+            // Update master commits if hash matches
+            if (hash.compare(packhash) == 0) {
+                master_commit = object.substr(object.find('\0'));
             }
-
-            // advance position past the delta data
-            current_position += compress_string(delta_contents).length();
         }
         else { // other object types (1: commit, 2: tree, other: blob)
             // process standard objects
