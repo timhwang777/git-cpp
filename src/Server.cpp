@@ -608,9 +608,7 @@ int main(int argc, char* argv[]) {
         // retrieve file path and check if object hash is valid
         //char dataPath[64];
         //snprintf(dataPath, sizeof(dataPath), ".git/objects/%.2s/%s", argv[3], argv[3] + 2);
-        FILE* output = fdopen(1, "wb");
-        return cat_file(argv[3], ".", output, true);
-        fclose(output);
+        return cat_file(argv[3], ".", stdout);
     }
     else if (command == "hash-object") {
         // check if file path is provided
