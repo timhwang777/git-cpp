@@ -2,6 +2,8 @@
 #include <cstdlib>
 #include <cstring>
 #include <zlib.h>
+#include <sstream>
+#include <stdexcept>
 #include "zlib_implement.h"
 
 #define CHUNK 16384 //16KB
@@ -111,4 +113,84 @@ int compress(FILE* input, FILE* output) {
     }
 
     return EXIT_SUCCESS;
+}
+
+std::string decompress_string (const std::string& compressed_str) {
+    z_stream d_stream;
+    memset(&d_stream, 0, sizeof(d_stream));
+
+    if (inflateInit(&d_stream) != Z_OK) {
+        throw(std::runtime_error("inflateInit failed while decompressing."));
+    }
+
+    d_stream.next_in = reinterpret_cast<Bytef*>(const_cast<char*>(compressed_str.data()));
+    d_stream.avail_in = compressed_str.size();
+
+    int status;
+    const size_t buffer_size = 32768; // 32KB
+    char buffer[buffer_size];
+    std::string decompressed_str;
+
+    do {
+        d_stream.next_out = reinterpret_cast<Bytef*>(buffer);
+        d_stream.avail_out = buffer_size;
+
+        status = inflate(&d_stream, 0);
+
+        if (decompressed_str.size() < d_stream.total_out) {
+            decompressed_str.append(buffer, d_stream.total_out - decompressed_str.size());
+        }
+    } while (status == Z_OK);
+
+    if (inflateEnd(&d_stream) != Z_OK) {
+        throw(std::runtime_error("inflateEnd failed while decompressing."));
+    }
+
+    if (status != Z_STREAM_END) {
+        std::ostringstream oss;
+        oss << "Exception during zlib decompression: (" << status << ") " << d_stream.msg;
+        throw(std::runtime_error(oss.str()));
+    }
+
+    return decompressed_str;
+}
+
+std::string compress_string (const std::string& input_str) {
+    z_stream c_stream;
+    memset(&c_stream, 0, sizeof(c_stream));
+
+    if (deflateInit(&c_stream, Z_DEFAULT_COMPRESSION) != Z_OK) {
+        throw(std::runtime_error("deflateInit failed while compressing."));
+    }
+
+    c_stream.next_in = reinterpret_cast<Bytef*>(const_cast<char*>(input_str.data()));
+    c_stream.avail_in = input_str.size();
+
+    int status;
+    const size_t buffer_size = 32768; // 32KB
+    char buffer[buffer_size];
+    std::string compressed_str;
+
+    do {
+        c_stream.next_out = reinterpret_cast<Bytef*>(buffer);
+        c_stream.avail_out = sizeof(buffer);
+
+        status = deflate(&c_stream, Z_FINISH);
+
+        if (compressed_str.size() < c_stream.total_out) {
+            compressed_str.append(buffer, c_stream.total_out - compressed_str.size());
+        }
+    } while (status == Z_OK);
+
+    if (deflateEnd(&c_stream) != Z_OK) {
+        throw(std::runtime_error("deflateEnd failed while compressing."));
+    }
+
+    if (status != Z_STREAM_END) {
+        std::ostringstream oss;
+        oss << "Exception during zlib compression: (" << status << ") " << c_stream.msg;
+        throw(std::runtime_error(oss.str()));
+    }
+
+    return compressed_str;
 }
