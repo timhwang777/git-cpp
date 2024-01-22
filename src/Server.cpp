@@ -43,6 +43,7 @@ int cat_file(const char* file_path, const std::string& dir, FILE* dest) {
     try {
         std::string blob_sha = file_path;
         std::string blob_path = dir + "/.git/objects/" + blob_sha.insert(2, "/");
+        std::cout << "blob path: " << blob_path << std::endl;
         FILE* blob_file = fopen(blob_path.c_str(), "rb");
         if (blob_file == NULL) {
             std::cerr << "Invalid object hash.\n";
