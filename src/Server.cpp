@@ -540,13 +540,13 @@ int clone (std::string url, std::string dir) {
 
             // apply delta to base object
             std::string delta_contents = decompress_string(pack.substr(current_position));
-            reconstructed_contents = do_delta(delta_contents, base_object_contents);
+            std::string reconstructed_contents = apply_delta(delta_contents, base_object_contents);
 
             // Reconstruct the object with its type and length
             reconstructed_contents = object_type_extracted + ' ' + std::to_string(reconstructed_contents.length()) + '\0' + reconstructed_contents;
 
             // Compute the object hash and store it
-            std::string object_hash = gethash(reconstructed_contents);
+            std::string object_hash = compute_sha1(reconstructed_contents);
             compress_and_store(object_hash.c_str(), reconstructed_contents, dir);
 
             // Advance position past the delta data
