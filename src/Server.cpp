@@ -593,9 +593,9 @@ int main(int argc, char* argv[]) {
         }
 
         // retrieve file path and check if object hash is valid
-        char dataPath[64];
-        snprintf(dataPath, sizeof(dataPath), ".git/objects/%.2s/%s", argv[3], argv[3] + 2);
-        if (cat_file(dataPath, ".", stdout) != EXIT_SUCCESS) {
+        //char dataPath[64];
+        //snprintf(dataPath, sizeof(dataPath), ".git/objects/%.2s/%s", argv[3], argv[3] + 2);
+        if (cat_file(argv[3], ".", stdout) != EXIT_SUCCESS) {
             std::cerr << "Failed to retrieve object.\n";
             return EXIT_FAILURE;
         }
