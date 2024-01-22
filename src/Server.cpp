@@ -39,26 +39,27 @@ bool git_init (const std::string& dir) {
     }
 }
 
-int cat_file(const char* file_path, const std::string& dir, FILE* dest, bool print_out = false) {
-    try {
-        std::string blob_sha = file_path;
-        std::string blob_path = dir + "/.git/objects/" + blob_sha.insert(2, "/");
-        if (print_out) std::cout << "blob path: " << blob_path << std::endl;
-        FILE* blob_file = fopen(blob_path.c_str(), "rb");
-        if (blob_file == NULL) {
+int cat_file(const char* filepath) {
+        FILE* dataFile = fopen(filepath, "rb");
+        if (!dataFile) {
             std::cerr << "Invalid object hash.\n";
             return EXIT_FAILURE;
         }
 
-        decompress(blob_file, dest);
-        fclose(blob_file);
-    }
-    catch (const std::filesystem::filesystem_error& e) {
-        std::cerr << e.what() << '\n';
-        return EXIT_FAILURE;
-    }
+        // create output file for standard output
+        FILE* outputFile = fdopen(1, "wb");
+        if (!outputFile) {
+            std::cerr << "Failed to create output file.\n";
+            return EXIT_FAILURE;
+        }
 
-    return EXIT_SUCCESS;
+        // decompress data file
+        if (decompress(dataFile, outputFile) != EXIT_SUCCESS) {
+            std::cerr << "Failed to decompress data file.\n";
+            return EXIT_FAILURE;
+        }
+
+        return EXIT_SUCCESS;
 }
 
 std::string compute_sha1 (const std::string& data, bool print_out = false) {
@@ -434,6 +435,29 @@ std::string apply_delta (const std::string& delta_contents, const std::string& b
     return reconstructed_object;
 }
 
+int cat_file_tree(const char* file_path, const std::string& dir, FILE* dest, bool print_out = false) {
+    try {
+        std::string blob_sha = file_path;
+        std::string blob_path = dir + "/.git/objects/" + blob_sha.insert(2, "/");
+        if (print_out) std::cout << "blob path: " << blob_path << std::endl;
+        
+        FILE* blob_file = fopen(blob_path.c_str(), "rb");
+        if (blob_file == NULL) {
+            std::cerr << "Invalid object hash.\n";
+            return EXIT_FAILURE;
+        }
+
+        decompress(blob_file, dest);
+        fclose(blob_file);
+    }
+    catch (const std::filesystem::filesystem_error& e) {
+        std::cerr << e.what() << '\n';
+        return EXIT_FAILURE;
+    }
+
+    return EXIT_SUCCESS;
+}
+
 void restore_tree (const std::string& tree_hash, const std::string& dir, const std::string& proj_dir) {
     // construct the path to the tree object
     std::string object_path = proj_dir + "/.git/objects/" + tree_hash.substr(0, 2) + '/' + tree_hash.substr(2);
@@ -479,7 +503,7 @@ void restore_tree (const std::string& tree_hash, const std::string& dir, const s
 
             // create the file and write its contents
             FILE* new_file = fopen((dir + '/' + path).c_str(), "wb");
-            cat_file(blob_hash.c_str(), proj_dir, new_file);
+            cat_file_tree(blob_hash.c_str(), proj_dir, new_file);
             fclose(new_file);
             pos += 20; // skip the hash
         }
@@ -606,9 +630,12 @@ int main(int argc, char* argv[]) {
         }
 
         // retrieve file path and check if object hash is valid
-        //char dataPath[64];
-        //snprintf(dataPath, sizeof(dataPath), ".git/objects/%.2s/%s", argv[3], argv[3] + 2);
-        return cat_file(argv[3], ".", stdout);
+        char dataPath[64];
+        snprintf(dataPath, sizeof(dataPath), ".git/objects/%.2s/%s", argv[3], argv[3] + 2);
+        if (cat_file(dataPath) != EXIT_SUCCESS) {
+            std::cerr << "Failed to retrieve object.\n";
+            return EXIT_FAILURE;
+        }
     }
     else if (command == "hash-object") {
         // check if file path is provided
