@@ -81,7 +81,7 @@ std::string compute_sha1 (const std::string& data, bool print_out = false) {
 void compress_and_store (const std::string& hash, const std::string& content, std::string dir = ".") {
     FILE* input = fmemopen((void*) content.c_str(), content.length(), "rb");
     std::string hash_folder = hash.substr(0, 2);
-    std::string object_path = dir + ".git/objects/" + hash_folder + '/';
+    std::string object_path = dir + "/.git/objects/" + hash_folder + '/';
     if (!std::filesystem::exists(object_path)) {
         std::filesystem::create_directories(object_path);
     }
@@ -440,7 +440,7 @@ int cat_file_tree(const char* file_path, const std::string& dir, FILE* dest, boo
         std::string blob_sha = file_path;
         std::string blob_path = dir + "/.git/objects/" + blob_sha.insert(2, "/");
         if (print_out) std::cout << "blob path: " << blob_path << std::endl;
-        
+
         FILE* blob_file = fopen(blob_path.c_str(), "rb");
         if (blob_file == NULL) {
             std::cerr << "Invalid object hash.\n";
