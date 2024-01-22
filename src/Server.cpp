@@ -39,11 +39,11 @@ bool git_init (const std::string& dir) {
     }
 }
 
-int cat_file(const char* file_path, const std::string& dir, FILE* dest) {
+int cat_file(const char* file_path, const std::string& dir, FILE* dest, bool print_out = false) {
     try {
         std::string blob_sha = file_path;
         std::string blob_path = dir + "/.git/objects/" + blob_sha.insert(2, "/");
-        std::cout << "blob path: " << blob_path << std::endl;
+        if (print_out) std::cout << "blob path: " << blob_path << std::endl;
         FILE* blob_file = fopen(blob_path.c_str(), "rb");
         if (blob_file == NULL) {
             std::cerr << "Invalid object hash.\n";
@@ -609,7 +609,7 @@ int main(int argc, char* argv[]) {
         //char dataPath[64];
         //snprintf(dataPath, sizeof(dataPath), ".git/objects/%.2s/%s", argv[3], argv[3] + 2);
         FILE* output = fdopen(1, "wb");
-        return cat_file(argv[3], ".", output);
+        return cat_file(argv[3], ".", output, true);
         fclose(output);
     }
     else if (command == "hash-object") {
