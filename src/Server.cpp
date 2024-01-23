@@ -594,9 +594,10 @@ int clone (std::string url, std::string dir) {
 
             // store the object and update master commits if hash matches
             std::string object_hash = compute_sha1(object_contents, false);
-            compress_and_store(object_hash.c_str(), dir);
+            std::string compressed_object = compress_string(object_contents);
+            compress_and_store(object_hash.c_str(), object_contents, dir);
             if (object_hash.compare(packhash) == 0) {
-                master_commit_contents = object_contents;
+                master_commit_contents = object_contents.substr(object_contents.find('\0'));
             }
         }
     }
