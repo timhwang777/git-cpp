@@ -713,10 +713,7 @@ int main(int argc, char* argv[]) {
 
         std::cout << "url: " << url << ", " << "directory: " << directory << std::endl;
 
-        if (clone(url, directory) != EXIT_SUCCESS) {
-            std::cerr << "Failed to clone repository.\n";
-            return EXIT_FAILURE;
-        }
+        return clone(url, directory);
     }
     else {
         std::cerr << "Unknown command " << command << '\n';
