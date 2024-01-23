@@ -559,6 +559,8 @@ int clone (std::string url, std::string dir) {
             std::stringstream buffer;
             buffer << file.rdbuf();
             std::string file_contents = buffer.str();
+
+            std::cout << "enter decompress_string 1 \n";
             std::string base_object_contents = decompress_string(file_contents);
             
             // Extract and remove the object type
@@ -566,6 +568,7 @@ int clone (std::string url, std::string dir) {
             base_object_contents = base_object_contents.substr(base_object_contents.find('\0') + 1);
 
             // apply delta to base object
+            std::cout << "enter decompress_string 2 \n";
             std::string delta_contents = decompress_string(pack.substr(current_position));
             std::string reconstructed_contents = apply_delta(delta_contents, base_object_contents);
 
@@ -587,6 +590,7 @@ int clone (std::string url, std::string dir) {
         }
         else { // other object types (1: commit, 2: tree, other: blob)
             // process standard objects
+            std::cout << "enter decompress_string 3 \n";
             std::string object_contents = decompress_string(pack.substr(current_position));
             current_position += compress_string(object_contents).length();
 
