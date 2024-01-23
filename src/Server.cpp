@@ -522,6 +522,7 @@ int clone (std::string url, std::string dir) {
 
     // fetch the repository
     auto [pack, packhash] = curl_request(url);
+    std::cout << "pack: " << pack << ", " << "packhash: " << packhash << std::endl;
 
     // parse the pack file
     int num_objects = 0;
