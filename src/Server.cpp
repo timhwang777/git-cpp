@@ -438,7 +438,7 @@ std::string apply_delta (const std::string& delta_contents, const std::string& b
 }
 
 int cat_file_for_clone(const char* file_path, const std::string& dir, FILE* dest, bool print_out = false) {
-    std::cout << "enter cat_file_tree\n";
+    //std::cout << "enter cat_file_tree\n";
     try {
         std::string blob_sha = file_path;
         std::string blob_path = dir + "/.git/objects/" + blob_sha.insert(2, "/");
@@ -516,7 +516,7 @@ void restore_tree (const std::string& tree_hash, const std::string& dir, const s
     Todo: restore the tree function
 */
 int clone (std::string url, std::string dir) {
-    std::cout << "enter clone\n";
+    //std::cout << "enter clone\n";
     // create the repository directory and initialize it
     std::filesystem::create_directory(dir);
     if (git_init(dir) != true) {
@@ -527,7 +527,7 @@ int clone (std::string url, std::string dir) {
     // fetch the repository
     auto [pack, packhash] = curl_request(url);
     //std::cout << "pack: " << pack << ", " << "packhash: " << packhash << std::endl;
-    std::cout << "curl finished\n";
+    //std::cout << "curl finished\n";
     //std::cout << "pack: " << pack << "packhash: " << packhash << std::endl;
 
     // parse the pack file
@@ -537,21 +537,21 @@ int clone (std::string url, std::string dir) {
         num_objects = num_objects | (unsigned char) pack[i];
     }
     pack = pack.substr(20, pack.length() - 40); // removing the headers of HTTP
-    std::cout << "num_objects: " << num_objects << std::endl; 
+    //std::cout << "num_objects: " << num_objects << std::endl; 
 
     // proecessing object files in a git pack file
     int object_type;
     int current_position = 0;
     std::string master_commit_contents;
     for (int object_index = 0; object_index < num_objects; object_index++) {
-        std::cout << "loop the objects\n";
+        //std::cout << "loop the objects\n";
         // extract object type from the first byte
         object_type = (pack[current_position] & 112) >> 4; // 112 is 11100000
-        std::cout << "object_type: " << object_type << std::endl;
+        //std::cout << "object_type: " << object_type << std::endl;
 
         // read the object's length
         int object_length = read_length(pack, &current_position);
-        std::cout << "object_length: " << object_length << std::endl;
+        //std::cout << "object_length: " << object_length << std::endl;
 
         // process based on object type
         if (object_type == 6) { // offset deltas: ignore it
@@ -569,7 +569,7 @@ int clone (std::string url, std::string dir) {
             buffer << file.rdbuf();
             std::string file_contents = buffer.str();
 
-            std::cout << "enter decompress_string 1 \n";
+            //std::cout << "enter decompress_string 1 \n";
             std::string base_object_contents = decompress_string(file_contents);
             
             // Extract and remove the object type
@@ -577,7 +577,7 @@ int clone (std::string url, std::string dir) {
             base_object_contents = base_object_contents.substr(base_object_contents.find('\0') + 1);
 
             // apply delta to base object
-            std::cout << "enter decompress_string 2 \n";
+            //std::cout << "enter decompress_string 2 \n";
             std::string delta_contents = decompress_string(pack.substr(current_position));
             std::string reconstructed_contents = apply_delta(delta_contents, base_object_contents);
 
@@ -599,7 +599,7 @@ int clone (std::string url, std::string dir) {
         }
         else { // other object types (1: commit, 2: tree, other: blob)
             // process standard objects
-            std::cout << "enter decompress_string 3 \n";
+            //std::cout << "enter decompress_string 3 \n";
             std::string object_contents = decompress_string(pack.substr(current_position));
             current_position += compress_string(object_contents).length();
 
@@ -714,12 +714,10 @@ int main(int argc, char* argv[]) {
             return EXIT_FAILURE;
         }
 
-        //std::string url = argv[2];
-        //std::string directory = argv[3];
+        std::string url = argv[2];
+        std::string directory = argv[3];
 
-        std::cout << "url: " << argv[2] << ", " << "directory: " << argv[3] << std::endl;
-
-        if (clone(argv[2], argv[3]) != EXIT_SUCCESS) {
+        if (clone(url, directory) != EXIT_SUCCESS) {
             std::cerr << "Failed to clone repository.\n";
             return EXIT_FAILURE;
         }
