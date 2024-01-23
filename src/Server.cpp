@@ -538,6 +538,7 @@ int clone (std::string url, std::string dir) {
     int current_position;
     std::string master_commit_contents;
     for (int object_index = 0; object_index < num_objects; object_index++) {
+        std::cout << "loop the objects\n";
         // extract object type from the first byte
         object_type = (pack[current_position] & 112) >> 4; // 112 is 11100000
 
