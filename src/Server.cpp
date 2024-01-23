@@ -310,9 +310,10 @@ std::pair<std::string, std::string> curl_request (const std::string& url) {
     if (handle) {
         // fetch info/refs
         curl_easy_setopt(handle, CURLOPT_URL, (url + "/info/refs?service=git-upload-pack").c_str());
+        
         std::string packhash;
         curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, write_callback);
-        curl_easy_setopt(handle, CURLOPT_WRITEDATA, &packhash);
+        curl_easy_setopt(handle, CURLOPT_WRITEDATA, (void*) &packhash);
         curl_easy_perform(handle);
         curl_easy_reset(handle);
 
@@ -323,7 +324,7 @@ std::pair<std::string, std::string> curl_request (const std::string& url) {
         curl_easy_setopt(handle, CURLOPT_POSTFIELDS, postdata.c_str());
 
         std::string pack;
-        curl_easy_setopt(handle, CURLOPT_WRITEDATA, &pack);
+        curl_easy_setopt(handle, CURLOPT_WRITEDATA, (void*) &pack);
         curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, pack_data_callback);
 
         struct curl_slist* headers = NULL;
@@ -436,7 +437,7 @@ std::string apply_delta (const std::string& delta_contents, const std::string& b
     return reconstructed_object;
 }
 
-int cat_file_tree(const char* file_path, const std::string& dir, FILE* dest, bool print_out = false) {
+int cat_file_for_clone(const char* file_path, const std::string& dir, FILE* dest, bool print_out = false) {
     std::cout << "enter cat_file_tree\n";
     try {
         std::string blob_sha = file_path;
@@ -505,7 +506,7 @@ void restore_tree (const std::string& tree_hash, const std::string& dir, const s
 
             // create the file and write its contents
             FILE* new_file = fopen((dir + '/' + path).c_str(), "wb");
-            cat_file_tree(blob_hash.c_str(), proj_dir, new_file);
+            cat_file_for_clone(blob_hash.c_str(), proj_dir, new_file);
             fclose(new_file);
             pos += 20; // skip the hash
         }
@@ -527,6 +528,7 @@ int clone (std::string url, std::string dir) {
     auto [pack, packhash] = curl_request(url);
     //std::cout << "pack: " << pack << ", " << "packhash: " << packhash << std::endl;
     std::cout << "curl finished\n";
+    //std::cout << "pack: " << pack << "packhash: " << packhash << std::endl;
 
     // parse the pack file
     int num_objects = 0;
@@ -535,18 +537,21 @@ int clone (std::string url, std::string dir) {
         num_objects = num_objects | (unsigned char) pack[i];
     }
     pack = pack.substr(20, pack.length() - 40); // removing the headers of HTTP
+    std::cout << "num_objects: " << num_objects << std::endl; 
 
     // proecessing object files in a git pack file
     int object_type;
-    int current_position;
+    int current_position = 0;
     std::string master_commit_contents;
     for (int object_index = 0; object_index < num_objects; object_index++) {
         std::cout << "loop the objects\n";
         // extract object type from the first byte
         object_type = (pack[current_position] & 112) >> 4; // 112 is 11100000
+        std::cout << "object_type: " << object_type << std::endl;
 
         // read the object's length
         int object_length = read_length(pack, &current_position);
+        std::cout << "object_length: " << object_length << std::endl;
 
         // process based on object type
         if (object_type == 6) { // offset deltas: ignore it
@@ -712,7 +717,7 @@ int main(int argc, char* argv[]) {
         //std::string url = argv[2];
         //std::string directory = argv[3];
 
-        //std::cout << "url: " << url << ", " << "directory: " << directory << std::endl;
+        std::cout << "url: " << argv[2] << ", " << "directory: " << argv[3] << std::endl;
 
         if (clone(argv[2], argv[3]) != EXIT_SUCCESS) {
             std::cerr << "Failed to clone repository.\n";
