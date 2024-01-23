@@ -86,7 +86,7 @@ void compress_and_store (const std::string& hash, const std::string& content, st
         std::filesystem::create_directories(object_path);
     }
     
-    std::string object_file_path = object_path + hash.substr(2, 38);
+    std::string object_file_path = object_path + hash.substr(2);
     //std::cout << "object file path: " << object_file_path << std::endl;
     if (!std::filesystem::exists(object_file_path)) {
         FILE* output = fopen(object_file_path.c_str(), "wb");
