@@ -300,7 +300,7 @@ size_t write_callback (void* received_data, size_t element_size, size_t num_elem
 // curl helper function
 size_t pack_data_callback (void* received_data, size_t element_size, size_t num_element, void* userdata) {
     std::string* accumulated_data = (std::string*) userdata;
-    *accumulated_data += std::string((char*) received_data);
+    *accumulated_data += std::string((char*) received_data, num_element);
 
     return element_size * num_element;
 }
