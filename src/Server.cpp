@@ -514,6 +514,7 @@ void restore_tree (const std::string& tree_hash, const std::string& dir, const s
     Todo: restore the tree function
 */
 int clone (std::string url, std::string dir) {
+    std::cout << "enter clone\n";
     // create the repository directory and initialize it
     std::filesystem::create_directory(dir);
     if (git_init(dir) != true) {
@@ -525,7 +526,7 @@ int clone (std::string url, std::string dir) {
     auto [pack, packhash] = curl_request(url);
     //std::cout << "pack: " << pack << ", " << "packhash: " << packhash << std::endl;
     std::cout << "curl finished\n";
-    
+
     // parse the pack file
     int num_objects = 0;
     for (int i=16; i<20; i++) {
