@@ -17,6 +17,7 @@
 
 /* Functions */
 bool git_init (const std::string& dir) {
+    std::cout << "git init \n";
     try {
         std::filesystem::create_directory(dir + "/.git");
         std::filesystem::create_directory(dir + "/.git/objects");
