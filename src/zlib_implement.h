@@ -1,7 +1,8 @@
 #ifndef ZLIB_IMPLEMENT_H
 #define ZLIB_IMPLEMENT_H
 
-//#include <cstdio>
+#include <cstdio>
+#include <string>
 
 int decompress (FILE* input, FILE* output);
 int compress (FILE* input, FILE* output);
