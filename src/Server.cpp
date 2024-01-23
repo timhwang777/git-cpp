@@ -712,7 +712,7 @@ int main(int argc, char* argv[]) {
         std::string url = argv[2];
         std::string directory = argv[3];
 
-        std::cout << "url: " << url << ", " << "directory: " << directory << std::endl;
+        //std::cout << "url: " << url << ", " << "directory: " << directory << std::endl;
 
         if (clone(url, directory) != EXIT_SUCCESS) {
             std::cerr << "Failed to clone repository.\n";
