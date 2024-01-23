@@ -436,6 +436,7 @@ std::string apply_delta (const std::string& delta_contents, const std::string& b
 }
 
 int cat_file_tree(const char* file_path, const std::string& dir, FILE* dest, bool print_out = false) {
+    std::cout << "enter cat_file_tree\n";
     try {
         std::string blob_sha = file_path;
         std::string blob_path = dir + "/.git/objects/" + blob_sha.insert(2, "/");
@@ -522,7 +523,7 @@ int clone (std::string url, std::string dir) {
 
     // fetch the repository
     auto [pack, packhash] = curl_request(url);
-    std::cout << "pack: " << pack << ", " << "packhash: " << packhash << std::endl;
+    //std::cout << "pack: " << pack << ", " << "packhash: " << packhash << std::endl;
 
     // parse the pack file
     int num_objects = 0;
