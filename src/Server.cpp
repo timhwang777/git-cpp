@@ -709,12 +709,12 @@ int main(int argc, char* argv[]) {
             return EXIT_FAILURE;
         }
 
-        std::string url = argv[2];
-        std::string directory = argv[3];
+        //std::string url = argv[2];
+        //std::string directory = argv[3];
 
         //std::cout << "url: " << url << ", " << "directory: " << directory << std::endl;
 
-        if (clone(url, directory) != EXIT_SUCCESS) {
+        if (clone(argv[2], argv[3]) != EXIT_SUCCESS) {
             std::cerr << "Failed to clone repository.\n";
             return EXIT_FAILURE;
         }
