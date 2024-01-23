@@ -46,4 +46,4 @@ CTestTestfile.cmake
 _deps
 
 # VS Code specific
-.vscode
+.vscode/
